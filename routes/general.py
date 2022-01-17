@@ -27,9 +27,8 @@ general_router = APIRouter()
 @general_router.get('/states')
 async def get_states():
     query = await States.all().values('id', 'name')
-    for q in query:
-        q.update({"success": True, "total_states": await States.all().count()})
-    return query
+
+    return {"success": True, "total_states": await States.all().count(), "states": query}
 
 
 # POST `/states`
