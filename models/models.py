@@ -53,16 +53,18 @@ class Students(Model):
     name = fields.TextField()
     school = fields.TextField(null=True)
     branch = fields.ForeignKeyField("models.Branches", null=True)
-    governorate = fields.ForeignKeyField("models.Governorates")
-    institute = fields.ForeignKeyField("models.Institutes")
+    governorate = fields.ForeignKeyField("models.Governorates", null=True)
+    institute = fields.ForeignKeyField("models.Institutes", null=True)
+    state = fields.ForeignKeyField("models.States", null=True)
     first_phone = fields.IntField(null=True)
     second_phone = fields.IntField(null=True)
     code = fields.IntField(nul=True)
     telegram_user = fields.TextField(null=True)
     created_at = fields.DateField(null=True)
     note = fields.TextField(null=True)
-    total_amount = fields.IntField(null=True)
+    total_amount = fields.FloatField(null=True)
     poster = fields.ForeignKeyField("models.Posters", null=True)
+    remaining_amount = fields.FloatField(null=True)
 
 
 class StudentInstallments(Model):
@@ -70,9 +72,14 @@ class StudentInstallments(Model):
     installment = fields.ForeignKeyField("models.Installments", null=True)
     date = fields.DateField(null=True)
     amount = fields.IntField(null=True)
-    remaining_amount = fields.FloatField(null=True)
     invoice = fields.IntField(null=True)
     student = fields.ForeignKeyField("models.Students", null=True)
 
     class Meta:
         table = "student_installments"
+
+
+class States(Model):
+    id = fields.IntField(pk=True)
+    name = fields.TextField()
+
