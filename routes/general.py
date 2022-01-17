@@ -1,3 +1,6 @@
+import os
+import signal
+
 from fastapi import APIRouter
 from models.models import Institutes, Governorates, States, Students, Installments, StudentInstallments, \
     Users, UserAuth
@@ -438,6 +441,8 @@ async def login(schema: Login):
                 }
 
 
-
 @general_router.get('/shutdown')
 async def shutdown():
+    pid = os.getpid()
+    print(pid)
+    os.kill(pid, signal.CTRL_C_EVENT)
