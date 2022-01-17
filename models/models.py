@@ -27,10 +27,10 @@ class Posters(Model):
     name = fields.TextField()
 
 
-class Authorities(Model):
-    id = fields.IntField(pk=True)
-    name = fields.TextField()
-    governorate = fields.ForeignKeyField("models.Governorates")
+# class Authorities(Model):
+#     id = fields.IntField(pk=True)
+#     name = fields.TextField()
+#     state = fields.ForeignKeyField("models.States")
 
 
 class Users(Model):
@@ -41,7 +41,7 @@ class Users(Model):
 
 class UserAuth(Model):
     id = fields.IntField(pk=True)
-    auth = fields.ForeignKeyField("models.Authorities")
+    state = fields.ForeignKeyField("models.States")
     user = fields.ForeignKeyField("models.Users")
 
     class Meta:

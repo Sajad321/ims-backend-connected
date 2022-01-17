@@ -40,3 +40,27 @@ class Student(BaseModel):
     class Config:
         orm_mode = True
 
+
+class Authority(BaseModel):
+    state_id: int
+    state: str
+
+    class Config:
+        orm_mode = True
+
+
+class User(BaseModel):
+    username: str
+    password: str
+    authority: List[Authority]
+
+    class Config:
+        orm_mode = True
+
+
+class Login(BaseModel):
+    username: str
+    password: str
+
+    class Config:
+        orm_mode = True

@@ -1,7 +1,9 @@
 from fastapi import APIRouter
-from models.models import Institutes, Governorates, States, Students, Installments, StudentInstallments
+from models.models import Institutes, Governorates, States, Students, Installments, StudentInstallments, \
+    Users, UserAuth
 from tortoise.transactions import in_transaction
-from schemas.general import GeneralSchema, Student, StudentInstall
+from schemas.general import GeneralSchema, Student, StudentInstall, User, Login
+import hashlib
 
 general_router = APIRouter()
 
@@ -213,7 +215,7 @@ async def del_student(student_id):
 # GET '/students'
 # = get students bulky
 # Response:
-# [
+# "students":[
 #   {
 #     "name": "حسين فاضل",
 #     "id": 1,
@@ -265,7 +267,8 @@ async def del_student(student_id):
 #       }
 #     ]
 #   }
-# ]
+# ],
+# "success":True}
 @general_router.get('/students')
 async def get_students():
     students = await Students.all().prefetch_related('branch', 'governorate', 'institute', 'state', 'poster').all()
@@ -284,7 +287,7 @@ async def get_students():
         student_json['total_amount'] = stu.total_amount
         student_json['remaining_amount'] = stu.remaining_amount
         if stu.branch is not None:
-                student_json['branch'] = {"id": stu.branch.id, 'name': stu.branch.name}
+            student_json['branch'] = {"id": stu.branch.id, 'name': stu.branch.name}
         if stu.governorate is not None:
             student_json['governorate'] = {"id": stu.governorate.id, "name": stu.governorate.name}
         if stu.institute is not None:
@@ -304,4 +307,134 @@ async def get_students():
         students_list.append(student_json)
         student_json = {}
 
-    return students_list
+    return {"students": students_list, "success": True}
+
+
+# GET `/users`
+#
+# - Get users from database.
+# - Request Arguments: None
+# - Returns: list of students.
+#
+# Example Response `{
+#   "users": [
+#     {
+#       "id": 1,
+#       "username": "krvhrv",
+#       "authority": [
+#         {
+#           "authority_id": 1,
+#           "state": "الكويت",
+#           "state_id": 1
+#         }
+#       ]
+#     }
+#   ],
+#   "total_users": 1,
+#   "success": true
+# }'
+@general_router.get('/users')
+async def get_users():
+    users = await Users.all()
+    result_list = []
+    for user in users:
+        result_json = {"id": user.id, "username": user.username}
+        authority = []
+        auth = await UserAuth.filter(user_id=user.id).prefetch_related('state').all()
+        for au in auth:
+            auth_json = {"authority_id": au.id, "state": au.state.name, "state_id": au.state.id}
+            authority.append(auth_json)
+        result_json['authority'] = authority
+        result_list.append(result_json)
+    return {
+        "users": result_list,
+        "total_users": await Users.all().count(),
+        "success": True
+    }
+
+
+# POST `/users`
+# - Add user in database.
+# - Request Arguments: None
+# - Returns: None.
+# Example Request Payload `{
+#     "username": "1",
+#     "password": "22",
+#     "authority": [
+#         {
+#             "state_id": 1,
+#             "state": "نرس"
+#         }
+#     ],
+# }`
+# Example Response `{
+#     "success": true
+# }`
+@general_router.post('/users')
+async def post_user(schema: User):
+    async with in_transaction() as conn:
+        password = hashlib.md5(schema.password.encode())
+
+        new = Users(username=schema.username, password=password.hexdigest())
+        await new.save(using_db=conn)
+        for state in schema.authority:
+            auth = UserAuth(user_id=new.id, state_id=state.state_id)
+            await auth.save(using_db=conn)
+    return {
+        "success": True
+    }
+
+
+# PATCH `/users/{user_id}`
+# - Add user in database.
+# - Request Arguments: None
+# - Returns: None.
+# Example Request Payload `{
+#     "username": "1",
+#     "password": "22",
+#     "authority": [
+#         {
+#             "state_id": 1,
+#             "state": "نرس"
+#         }
+#     ],
+# }`
+# Example Response `{
+#     "success": true
+# }`
+@general_router.patch('/users/{user_id}')
+async def patch_user(user_id, schema: User):
+    get_user = await Users.filter(id=user_id).first()
+    password = hashlib.md5(schema.password.encode())
+
+    await Users.filter(id=user_id).update(username=schema.username, password=password.hexdigest())
+    await UserAuth.filter(user_id=get_user.id).delete()
+    for state in schema.authority:
+        async with in_transaction() as conn:
+            auth = UserAuth(user_id=get_user.id, state_id=state.state_id)
+            await auth.save(using_db=conn)
+    return {
+        "success": True
+    }
+
+
+# POST - '/login'
+# request body:
+# {"username": krvhrv, "password": "1234"}
+# response: {"success": True}
+@general_router.post('/login')
+async def login(schema: Login):
+    users = await Users.all()
+    for user in users:
+        if user.username == schema.username:
+            password = schema.password.encode()
+            password = hashlib.md5(password)
+            if user.password == password.hexdigest():
+                return {
+                    "success": True
+                }
+            else:
+                return {
+                    "success": False
+                }
+
