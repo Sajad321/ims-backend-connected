@@ -437,3 +437,7 @@ async def login(schema: Login):
                     "success": False
                 }
 
+
+
+@general_router.get('/shutdown')
+async def shutdown():
