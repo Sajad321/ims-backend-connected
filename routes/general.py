@@ -108,8 +108,8 @@ async def del_state(state_id):
 #     "branch_id": "1",
 #     "institute_id": "1",
 #     "governorate_id": "1",
-#     "first_phone_number": "1",
-#     "second_phone_number": "1",
+#     "first_phone": "1",
+#     "second_phone": "1",
 #     "poster_id": "1",
 #     "code": "1",
 #     "telegram_username": "1",
@@ -128,8 +128,8 @@ async def post_student(schema: Student):
     async with in_transaction() as conn:
         new = Students(name=schema.name, school=schema.school, branch_id=schema.branch_id,
                        governorate_id=schema.governorate_id, institute_id=schema.institute_id,
-                       state_id=schema.state_id, first_phone=schema.first_phone_number,
-                       second_phone=schema.second_phone_number, code=schema.code, telegram_user=schema.telegram_username
+                       state_id=schema.state_id, first_phone=schema.first_phone,
+                       second_phone=schema.second_phone, code=schema.code, telegram_user=schema.telegram_username
                        , created_at=schema.created_at, note=schema.note, total_amount=schema.total_amount,
                        remaining_amount=schema.remaining_amount, poster_id=schema.poster_id)
         await new.save(using_db=conn)
@@ -154,8 +154,8 @@ async def post_student(schema: Student):
 #     "branch_id": "1",
 #     "institute_id": "1",
 #     "governorate_id": "1",
-#     "first_phone_number": "1",
-#     "second_phone_number": "1",
+#     "first_phone": "1",
+#     "second_phone": "1",
 #     "poster_id": "1",
 #     "code": "1",
 #     "telegram_username": "1",
@@ -174,8 +174,8 @@ async def post_student(schema: Student):
 async def patch_student(student_id, schema: Student):
     await Students.filter(id=student_id).update(name=schema.name, school=schema.school, branch_id=schema.branch_id,
                                                 governorate_id=schema.governorate_id, institute_id=schema.institute_id,
-                                                state_id=schema.state_id, first_phone=schema.first_phone_number,
-                                                second_phone=schema.second_phone_number, code=schema.code,
+                                                state_id=schema.state_id, first_phone=schema.first_phone,
+                                                second_phone=schema.second_phone, code=schema.code,
                                                 telegram_user=schema.telegram_username
                                                 , created_at=schema.created_at, note=schema.note,
                                                 total_amount=schema.total_amount,

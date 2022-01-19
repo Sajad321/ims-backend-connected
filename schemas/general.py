@@ -25,8 +25,8 @@ class Student(BaseModel):
     branch_id: Optional[int] = None
     institute_id: Optional[int] = None
     governorate_id: Optional[int] = None
-    first_phone_number: Optional[int] = None
-    second_phone_number: Optional[int] = None
+    first_phone: Optional[int] = None
+    second_phone: Optional[int] = None
     poster_id: Optional[int] = None
     code: Optional[int] = None
     telegram_username: Optional[str] = None
