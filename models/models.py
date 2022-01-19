@@ -5,11 +5,15 @@ from tortoise import fields
 class Installments(Model):
     id = fields.IntField(pk=True)
     name = fields.TextField()
+    unique_id = fields.TextField()
+    sync_state = fields.IntField(default=0)  # 0 offline, 1 sync
 
 
 class Branches(Model):
     id = fields.IntField(pk=True)
     name = fields.TextField()
+    unique_id = fields.TextField()
+    sync_state = fields.IntField(default=0)
 
 
 class Governorates(Model):
@@ -37,12 +41,16 @@ class Users(Model):
     id = fields.IntField(pk=True)
     username = fields.TextField()
     password = fields.TextField()
+    unique_id = fields.TextField()
+    sync_state = fields.IntField(default=0)
 
 
 class UserAuth(Model):
     id = fields.IntField(pk=True)
     state = fields.ForeignKeyField("models.States")
     user = fields.ForeignKeyField("models.Users")
+    unique_id = fields.TextField()
+    sync_state = fields.IntField(default=0)
 
     class Meta:
         table = "user_auth"
@@ -65,6 +73,8 @@ class Students(Model):
     total_amount = fields.FloatField(null=True)
     poster = fields.ForeignKeyField("models.Posters", null=True)
     remaining_amount = fields.FloatField(null=True)
+    unique_id = fields.TextField()
+    sync_state = fields.IntField(default=0)
 
 
 class StudentInstallments(Model):
@@ -74,6 +84,8 @@ class StudentInstallments(Model):
     amount = fields.IntField(null=True)
     invoice = fields.IntField(null=True)
     student = fields.ForeignKeyField("models.Students", null=True)
+    unique_id = fields.TextField()
+    sync_state = fields.IntField(default=0)
 
     class Meta:
         table = "student_installments"
@@ -82,4 +94,19 @@ class StudentInstallments(Model):
 class States(Model):
     id = fields.IntField(pk=True)
     name = fields.TextField()
+    unique_id = fields.TextField()
+    sync_state = fields.IntField(default=0)
 
+
+class TemporaryDelete(Model):
+    id = fields.IntField(pk=True)
+    unique_id = fields.TextField()
+    model_name = fields.TextField()
+    sync_state = fields.IntField(default=0)
+
+
+class TemporaryPatch(Model):
+    id = fields.IntField(pk=True)
+    unique_id = fields.TextField()
+    model_name = fields.TextField()
+    sync_state = fields.IntField(default=0)
