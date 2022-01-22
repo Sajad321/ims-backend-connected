@@ -2,6 +2,7 @@ from tortoise.contrib.fastapi import register_tortoise
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.general import general_router
+from routes.sync import sync_router
 
 
 def create_app() -> FastAPI:
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
 
 def register_views(app: FastAPI):
     app.include_router(general_router, tags=["General"])
+    app.include_router(sync_router, tags=["Sync"])
 
 
 TORTOISE_ORM = {

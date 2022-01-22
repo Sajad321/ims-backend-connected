@@ -494,3 +494,11 @@ async def shutdown():
     pid = os.getpid()
     print(pid)
     os.kill(pid, signal.CTRL_C_EVENT)
+
+
+@general_router.get('/governorates')
+async def get_governorates():
+    return {
+        "success": True,
+        "governorates": await Governorates.all()
+    }

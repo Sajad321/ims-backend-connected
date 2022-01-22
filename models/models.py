@@ -6,14 +6,12 @@ class Installments(Model):
     id = fields.IntField(pk=True)
     name = fields.TextField()
     unique_id = fields.TextField()
-    sync_state = fields.IntField(default=0)  # 0 offline, 1 sync
+    sync_state = fields.IntField(default=0)  # 0 offline, 1 synced
 
 
 class Branches(Model):
     id = fields.IntField(pk=True)
     name = fields.TextField()
-    unique_id = fields.TextField()
-    sync_state = fields.IntField(default=0)
 
 
 class Governorates(Model):
