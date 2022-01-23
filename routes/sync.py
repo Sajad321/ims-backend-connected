@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 import requests
-from models.models import Installments, States, Users, UserAuth, Students, StudentInstallments
+from models.models import Installments, States, Users, UserAuth, Students, StudentInstallments, TemporaryDelete
 
 sync_router = APIRouter()
 
@@ -18,6 +18,28 @@ async def get_users() -> list:
         result_json['authority'] = authority
         result_list.append(result_json)
     return result_list
+
+
+async def get_del() -> dict:
+    all_deleted = await TemporaryDelete.filter(sync_state=0).all()
+    unique_id_students = []
+    unique_id_students_install = []
+    unique_id_states = []
+    unique_id_users = []
+    for deleted in all_deleted:
+        if deleted.model_id == 1:
+            unique_id_students.append(deleted.unique_id)
+        elif deleted.model_id == 2:
+            unique_id_states.append(deleted.unique_id)
+        elif deleted.model_id == 3:
+            unique_id_students_install.append(deleted.unique_id)
+        elif deleted.model_id == 4:
+            unique_id_users.append(deleted.unique_id)
+        await TemporaryDelete.filter(id=deleted.id).update(sync_state=1)
+    return {
+        "unique_id_students": unique_id_students, "unique_id_students_install": unique_id_students_install,
+        "unique_id_states": unique_id_states, "unique_id_users": unique_id_users
+    }
 
 
 @sync_router.get('/sync')
@@ -68,6 +90,8 @@ async def sync():
             req = requests.post('http://127.0.0.1:8080/student_installment', json=json_install)
             if req.status_code == 200:
                 await StudentInstallments.filter(id=insta.id).update(sync_state=1)
+    all_del = await get_del()
+    req = requests.post('http://127.0.0.1:8080/del', json=all_del)
 
     return {
         "success": True

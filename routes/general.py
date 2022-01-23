@@ -104,7 +104,7 @@ async def del_state(state_id):
     await TemporaryPatch.filter(unique_id=q.unique_id).delete()
     if temporary is None:
         async with in_transaction() as conn:
-            new = TemporaryDelete(unique_id=q.unique_id)
+            new = TemporaryDelete(unique_id=q.unique_id, model_id=2)
             await new.save(using_db=conn)
     return {
         "success": True,
@@ -236,12 +236,11 @@ async def del_student(student_id):
     student = await Students.filter(id=student_id).first().values('name', 'unique_id')
     name = student['name']
     await Students.filter(id=student_id).delete()
-    temporary = await TemporaryDelete.filter(unique_id=student['unique_id']).first()
     await TemporaryPatch.filter(unique_id=student['unique_id']).delete()
-    if temporary is None:
-        async with in_transaction() as conn:
-            new = TemporaryDelete(unique_id=student['unique_id'])
-            await new.save(using_db=conn)
+
+    async with in_transaction() as conn:
+        new = TemporaryDelete(unique_id=student['unique_id'], model_id=1)
+        await new.save(using_db=conn)
     return {
         "success": True,
         "name": name
@@ -451,16 +450,16 @@ async def patch_user(user_id, schema: User):
 
     async with in_transaction() as conn:
         if temporary is None:
-            new = TemporaryPatch(unique_id=get_user.unique_id, model_name="Users")
+            new = TemporaryPatch(unique_id=get_user.unique_id, model_id=4)
             await new.save(using_db=conn)
-        new_2 = TemporaryDelete(unique_id=get_auth.unique_id,  model_name="UserAuth")
+        new_2 = TemporaryDelete(unique_id=get_auth.unique_id,  model_id=5)
         await new_2.save(using_db=conn)
     for state in schema.authority:
         async with in_transaction() as conn:
             unique_id = str(uuid4())
             auth = UserAuth(user_id=get_user.id, state_id=state.state_id, unique_id=unique_id)
             await auth.save(using_db=conn)
-            new = TemporaryPatch(unique_id=auth.unique_id, model_name="UserAuth")
+            new = TemporaryPatch(unique_id=auth.unique_id, model_id=5)
             await new.save(using_db=conn)
 
     return {

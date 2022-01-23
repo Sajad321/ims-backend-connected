@@ -99,12 +99,18 @@ class States(Model):
 class TemporaryDelete(Model):
     id = fields.IntField(pk=True)
     unique_id = fields.TextField()
-    model_name = fields.TextField()
+    model_id = fields.IntField()
+    ''' 
+    model_id = {"Students": 1, "states": 2, "student_installment": 3, "users": 4}
+    '''
     sync_state = fields.IntField(default=0)
 
 
 class TemporaryPatch(Model):
     id = fields.IntField(pk=True)
     unique_id = fields.TextField()
-    model_name = fields.TextField()
+    model_id = fields.IntField()
+    ''' 
+    model_id = {"Students": 1, "states": 2, "student_installment": 3, "users": 4}
+    '''
     sync_state = fields.IntField(default=0)
