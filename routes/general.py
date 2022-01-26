@@ -78,7 +78,7 @@ async def patch_state(state_id, schema: GeneralSchema):
     temporary = await TemporaryPatch.filter(unique_id=patch['unique_id']).first()
     async with in_transaction() as conn:
         if temporary is None:
-            new = TemporaryPatch(unique_id=patch['unique_id'], model_name='States')
+            new = TemporaryPatch(unique_id=patch['unique_id'], model_id=2)
             await new.save(using_db=conn)
     return {
         "success": True,
@@ -188,31 +188,33 @@ async def post_student(schema: Student):
 
 @general_router.patch('/students/{student_id}')
 async def patch_student(student_id, schema: Student):
-    await Students.filter(id=student_id).update(name=schema.name, school=schema.school, branch_id=schema.branch_id,
-                                                governorate_id=schema.governorate_id, institute_id=schema.institute_id,
-                                                state_id=schema.state_id, first_phone=schema.first_phone,
-                                                second_phone=schema.second_phone, code=schema.code,
+    await Students.filter(id=student_id).update(name=schema.name, school=schema.school,
+                                                branch_id=schema.branch_id,
+                                                governorate_id=schema.governorate_id,
+                                                institute_id=schema.institute_id,
+                                                state_id=schema.state_id,
+                                                first_phone=schema.first_phone,
+                                                second_phone=schema.second_phone,
+                                                code=schema.code,
                                                 telegram_user=schema.telegram_username
-                                                , created_at=schema.created_at, note=schema.note,
+                                                , created_at=schema.created_at,
+                                                note=schema.note,
                                                 total_amount=schema.total_amount,
-                                                remaining_amount=schema.remaining_amount, poster_id=schema.poster_id)
+                                                remaining_amount=schema.remaining_amount,
+                                                poster_id=schema.poster_id)
     name = await Students.filter(id=student_id).first().values('name', 'unique_id')
-    temporary = TemporaryPatch.filter(unique_id=name['unique_id']).first()
-    if temporary is None:
-        async with in_transaction() as conn:
-            new = TemporaryPatch(unique_id=name['unique_id'], model_name="Students")
-            await new.save(using_db=conn)
+    async with in_transaction() as conn:
+        new = TemporaryPatch(unique_id=name['unique_id'], model_id=1)
+        await new.save(using_db=conn)
     for student_install in schema.installments:
         await StudentInstallments.filter(student_id=student_id, installment_id=student_install.install_id).update(
             date=student_install.date,
             amount=student_install.amount,
             invoice=student_install.invoice)
         q = await StudentInstallments.filter(student_id=student_id, installment_id=student_install.install_id).first()
-        temporary_2 = await TemporaryPatch.filter(unique_id=q.unique_id).first()
-        if temporary_2 is None:
-            async with in_transaction() as coon:
-                new = TemporaryPatch(unique_id=name['unique_id'], model_name="StudentInstallments")
-                await new.save(using_db=coon)
+        async with in_transaction() as coon:
+            new = TemporaryPatch(unique_id=name['unique_id'], model_id=3)
+            await new.save(using_db=coon)
 
     name = name['name']
     return {
