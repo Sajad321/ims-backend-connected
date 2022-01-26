@@ -146,7 +146,19 @@ async def sync():
         req = requests.post('http://127.0.0.1:8080/student_installment', json=data_patch)
         if req.status_code == 200:
             await TemporaryPatch.filter(unique_id=install_patch.unique_id).update(sync_state=1)
-    # todo: users_patch
+    for user_auth in users_patch:
+        user = await Users.filter(unique_id=user_auth).first()
+        auths = await UserAuth.filter(user_id=user.id).all().prefetch_related('state')
+        authority = []
+        for auth in auths:
+            st = await States.filter(id=auth.state.id).first()
+            authority.append({"state_unique_id": st.unique_id, "unique_id": auth.unique_id})
+        user_json = {
+            "username": user.username, "password": user.password, "authority": authority, "unique_id": user.unique_id
+        }
+        req = requests.post('http://127.0.0.1:8080/users', json=user_json)
+        if req.status_code == 200:
+            await TemporaryPatch.filter(unique_id=user.unique_id).update(sync_state=1)
     return {
         "success": True
     }

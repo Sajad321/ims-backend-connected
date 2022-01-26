@@ -448,12 +448,9 @@ async def patch_user(user_id, schema: User):
     await Users.filter(id=user_id).update(username=schema.username, password=password.hexdigest())
     get_auth = await UserAuth.filter(user_id=get_user.id).first()
     await UserAuth.filter(user_id=get_user.id).delete()
-    temporary = TemporaryPatch.filter(unique_id=get_user.unique_id).first()
-
     async with in_transaction() as conn:
-        if temporary is None:
-            new = TemporaryPatch(unique_id=get_user.unique_id, model_id=4)
-            await new.save(using_db=conn)
+        new = TemporaryPatch(unique_id=get_user.unique_id, model_id=4)
+        await new.save(using_db=conn)
         new_2 = TemporaryDelete(unique_id=get_auth.unique_id,  model_id=5)
         await new_2.save(using_db=conn)
     for state in schema.authority:
