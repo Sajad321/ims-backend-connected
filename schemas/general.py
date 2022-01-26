@@ -43,7 +43,6 @@ class Student(BaseModel):
 
 class Authority(BaseModel):
     state_id: int
-    state: str
 
     class Config:
         orm_mode = True

@@ -3,7 +3,7 @@ import signal
 from uuid import uuid4
 from fastapi import APIRouter
 from models.models import Institutes, Governorates, States, Students, Installments, StudentInstallments, \
-    Users, UserAuth, TemporaryPatch, TemporaryDelete
+    Users, UserAuth, TemporaryPatch, TemporaryDelete, Branches, Posters
 from tortoise.transactions import in_transaction
 from schemas.general import GeneralSchema, Student, StudentInstall, User, Login
 import hashlib
@@ -490,7 +490,6 @@ async def login(schema: Login):
 @general_router.get('/shutdown')
 async def shutdown():
     pid = os.getpid()
-    print(pid)
     os.kill(pid, signal.CTRL_C_EVENT)
 
 
@@ -499,4 +498,20 @@ async def get_governorates():
     return {
         "success": True,
         "governorates": await Governorates.all()
+    }
+
+
+@general_router.get('/branches')
+async def get_branches():
+    return {
+        "branches": await Branches.all(),
+        "success": True
+    }
+
+
+@general_router.get('/posters')
+async def get_posters():
+    return {
+        "posters": await Posters.all(),
+        "success": True
     }
