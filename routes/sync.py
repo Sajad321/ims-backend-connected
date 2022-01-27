@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 import requests
+from tortoise.transactions import in_transaction
+
 from models.models import Installments, States, Users, UserAuth, Students, StudentInstallments, TemporaryDelete, \
-    TemporaryPatch
+    TemporaryPatch, Branches, Governorates, Institutes, Posters
 
 sync_router = APIRouter()
 
@@ -43,7 +45,7 @@ async def get_del() -> dict:
     }
 
 
-async def get_edits():
+async def get_edits() -> tuple:
     tp = await TemporaryPatch.filter(sync_state=0).all()
     students = []
     states = []
@@ -62,7 +64,7 @@ async def get_edits():
     return students, states, student_installment, users
 
 
-def student_json(student):
+def student_json(student) -> dict:
     return {"name": student.name, "school": student.school, "branch_id": student.branch.id,
             "governorate_id": student.governorate.id, "institute_id": student.institute.id,
             "state_unique_id": student.state.unique_id, "first_phone": student.first_phone,
@@ -72,6 +74,169 @@ def student_json(student):
             "total_amount": student.total_amount,
             "poster": student.poster.id, "remaining_amount": student.remaining_amount,
             "unique_id": student.unique_id}
+
+
+async def get_all():
+    branche_req = requests.get('http://127.0.0.1:8080/branches')
+    branches = await Branches.all().values('name')
+    branches = [n['name'] for n in branches]
+    branche_req = branche_req.json()
+    branche_req = branche_req['branches']
+    for branch in branche_req:
+        if branch['name'] not in branches:
+            async with in_transaction() as conn:
+                new = Branches(id=branch['id'], name=branch['name'])
+                await new.save(using_db=conn)
+    governorates_req = requests.get('http://127.0.0.1:8080/governorates')
+    governorates = await Governorates.all().values('name')
+    governorates = [n['name'] for n in governorates]
+    governorates_req = governorates_req.json()
+    governorates_req = governorates_req['governorates']
+    for governorate in governorates_req:
+        if governorate['name'] not in governorates:
+            async with in_transaction() as conn:
+                new = Governorates(id=governorate['id'], name=governorate['name'])
+                await new.save(using_db=conn)
+    installments_req = requests.get('http://127.0.0.1:8080/installments')
+    installments = await Installments.all().values('unique_id')
+    installments = [n['unique_id'] for n in installments]
+    installments_req = installments_req.json()
+    installments_req = installments_req['installments']
+    for installment in installments_req:
+        if installment['unique_id'] not in installments:
+            async with in_transaction() as conn:
+                new = Installments(id=installment['id'], name=installment['name'], unique_id=installment['unique_id'],
+                                   sync_state=1)
+                await new.save(using_db=conn)
+    institutes_req = requests.get('http://127.0.0.1:8080/institutes')
+    institutes = await Institutes.all().values('name')
+    institutes = [n['name'] for n in institutes]
+    institutes_req = institutes_req.json()
+    institutes_req = institutes_req['institutes']
+    for institute in institutes_req:
+        if institute['name'] not in institutes:
+            async with in_transaction() as conn:
+                new = Institutes(id=institute['id'], name=institute['name'])
+                await new.save(using_db=conn)
+    posters_req = requests.get('http://127.0.0.1:8080/posters')
+    posters = await Posters.all().values('name')
+    posters = [n['name'] for n in posters]
+    posters_req = posters_req.json()
+    posters_req = posters_req['posters']
+    for poster in posters_req:
+        if poster['name'] not in posters:
+            async with in_transaction() as conn:
+                new = Posters(id=poster['id'], name=poster['name'])
+                await new.save(using_db=conn)
+    states_req = requests.get('http://127.0.0.1:8080/states')
+    states = await States.all().values('unique_id')
+    states = [n['unique_id'] for n in states]
+    states_req = states_req.json()
+    states_req = states_req['states']
+    for state in states_req:
+        if state['unique_id'] in states and state['delete_state'] == 1:
+            await States.filter(unique_id=state['unique_id']).delete()
+        elif state['unique_id'] not in states and state['delete_state'] == 0:
+            async with in_transaction() as conn:
+                new = States(name=state['name'], unique_id=state['unique_id'], sync_state=1)
+                await new.save(using_db=conn)
+        elif state['unique_id'] in states and state['delete_state'] == 0 and state['patch_state'] == 1:
+            await States.filter(unique_id=state['unique_id']).update(name=state['name'])
+    students_req = requests.get('http://127.0.0.1:8080/students')
+    students = await Students.all().values('unique_id')
+    students = [n['unique_id'] for n in students]
+    student_req = students_req.json()
+    student_req = student_req['students']
+    for student in student_req:
+        if student['unique_id'] in students and student['delete_state'] == 1:
+            await Students.filter(unique_id=student['unique_id']).delete()
+        elif student['unique_id'] not in students and student['delete_state'] == 0:
+            async with in_transaction() as conn:
+                st = await States.filter(unique_id=student['_state']['unique_id']).first()
+                new = Students(name=student['name'], school=student['school'], branch_id=student['branch_id'],
+                               governorate_id=student['governorate_id'], institute_id=student['institute_id'],
+                               state_id=st.id, first_phone=student['first_phone'],
+                               second_phone=student['second_phone'], code=student['code'],
+                               telegram_user=student['telegram_user']
+                               , created_at=student['created_at'], note=student['note'],
+                               total_amount=student['total_amount'],
+                               remaining_amount=student['remaining_amount'], poster_id=student['poster_id'],
+                               unique_id=student['unique_id'], sync_state=1)
+                await new.save(using_db=conn)
+        elif student['unique_id'] in students and student['delete_state'] == 0 and student['patch_state'] == 1:
+            st = await States.filter(unique_id=student['_state']['unique_id']).first()
+            await Students.filter(unique_id=student['unique_id']).update(name=student['name'], school=student['school'],
+                                                                         branch_id=student['branch_id'],
+                                                                         governorate_id=student['governorate_id'],
+                                                                         institute_id=student['institute_id'],
+                                                                         state_id=st.id,
+                                                                         first_phone=student['first_phone'],
+                                                                         second_phone=student['second_phone'],
+                                                                         code=student['code'],
+                                                                         telegram_user=student['telegram_user']
+                                                                         , created_at=student['created_at'],
+                                                                         note=student['note'],
+                                                                         total_amount=student['total_amount'],
+                                                                         remaining_amount=student['remaining_amount'],
+                                                                         poster_id=student['poster_id'],
+                                                                         sync_state=1)
+    users_auth_req = requests.get('http://127.0.0.1:8080/users')
+    users_auth_req = users_auth_req.json()
+    users_auth_req = users_auth_req['users']
+    users = await Users.all().values('unique_id')
+    users = [n['unique_id'] for n in users]
+    for user in users_auth_req:
+        if user['unique_id'] in users and user['delete_state'] == 1:
+            await Users.filter(unique_id=user['unique_id']).delete()
+        elif user['unique_id'] not in users and user['delete_state'] == 0:
+            async with in_transaction() as conn:
+                new = Users(username=user['username'], password=user['password'], unique_id=user['unique_id'],
+                            sync_state=1)
+                await new.save(using_db=conn)
+                for auth in user['authority']:
+                    if auth['delete_state'] != 1:
+                        st_auth = await States.filter(unique_id=auth['state_unique_id']).first()
+                        new2 = UserAuth(state_id=st_auth.id, user_id=new.id, unique_id=auth['auth_unique_id'],
+                                        sync_state=1)
+                        await new2.save(using_db=conn)
+
+        elif user['unique_id'] in users and user['delete_state'] == 0 and user['patch_state'] == 1:
+            await Users.filter(unique_id=user['unique_id']).update(sync_state=1, username=user['username'],
+                                                                   password=user['password'])
+            for auth in user['authority']:
+                if auth['delete_state'] != 1:
+                    await UserAuth.filter(unique_id=auth['unique_id']).delete()
+                    async with in_transaction() as conn:
+                        st_auth = await States.filter(unique_id=auth['state_unique_id']).first()
+                        new2 = UserAuth(state_id=st_auth.id, user_id=new.id, unique_id=auth['auth_unique_id'],
+                                        sync_state=1)
+                        await new2.save(using_db=conn)
+                if auth['delete_state'] == 1:
+                    await UserAuth.filter(unique_id=auth['unique_id']).delete()
+    student_installments_req = requests.get('http://127.0.0.1:8080/student_installment')
+    student_installments = await StudentInstallments.all().values('unique_id')
+    student_installments_req = student_installments_req.json()
+    student_installments = [n['unique_id'] for n in student_installments]
+    reqs = student_installments_req['students_installments']
+    for req in reqs:
+        if req['unique_id'] in student_installments and req['delete_state'] == 1:
+            await StudentInstallments.filter(unique_id=req['unique_id']).delete()
+        if req['unique_id'] not in student_installments and req['delete_state'] == 0:
+            stu = await Students.filter(unique_id=req['_student']['unique_id']).first()
+            install = await Installments.filter(unique_id=req['_installment']['unique_id']).first()
+            async with in_transaction() as conn:
+                new = StudentInstallments(unique_id=req['unique_id'], sync_state=1, invoice=req['invoice'],
+                                          installment_id=install.id, student_id=stu.id, date=req['date'],
+                                          amount=req['amount'])
+
+                await new.save(using_db=conn)
+        if req['unique_id'] in student_installments and req['delete_state'] == 0 and req['patch_state'] == 1:
+            stu = await Students.filter(unique_id=req['_student']['unique_id']).first()
+            install = await Installments.filter(unique_id=req['_installment']['unique_id']).first()
+            await Students.filter(unique_id=req['unique_id']).update(sync_state=1, invoice=req['invoice'],
+                                                                     installment_id=install.id, student_id=stu.id,
+                                                                     date=req['date'],
+                                                                     amount=req['amount'])
 
 
 @sync_router.get('/sync')
@@ -159,6 +324,7 @@ async def sync():
         req = requests.post('http://127.0.0.1:8080/users', json=user_json)
         if req.status_code == 200:
             await TemporaryPatch.filter(unique_id=user.unique_id).update(sync_state=1)
+    await get_all()
     return {
         "success": True
     }
