@@ -12,7 +12,8 @@ async def get_users() -> list:
     users = await Users.filter(sync_state=0).all()
     result_list = []
     for user in users:
-        result_json = {"password": user.password, "username": user.username, "unique_id": user.unique_id}
+        result_json = {"password": user.password, "username": user.username, "unique_id": user.unique_id,
+                       "name": user.name}
         authority = []
         auth = await UserAuth.filter(user_id=user.id).prefetch_related('state').all()
         for au in auth:
@@ -77,7 +78,7 @@ def student_json(student) -> dict:
 
 
 async def get_all():
-    branche_req = requests.get('http://127.0.0.1:8080/branches')
+    branche_req = requests.get('https://ims-alhashimy.herokuapp.com/branches')
     branches = await Branches.all().values('name')
     branches = [n['name'] for n in branches]
     branche_req = branche_req.json()
@@ -87,7 +88,7 @@ async def get_all():
             async with in_transaction() as conn:
                 new = Branches(id=branch['id'], name=branch['name'])
                 await new.save(using_db=conn)
-    governorates_req = requests.get('http://127.0.0.1:8080/governorates')
+    governorates_req = requests.get('https://ims-alhashimy.herokuapp.com/governorates')
     governorates = await Governorates.all().values('name')
     governorates = [n['name'] for n in governorates]
     governorates_req = governorates_req.json()
@@ -97,7 +98,7 @@ async def get_all():
             async with in_transaction() as conn:
                 new = Governorates(id=governorate['id'], name=governorate['name'])
                 await new.save(using_db=conn)
-    installments_req = requests.get('http://127.0.0.1:8080/installments')
+    installments_req = requests.get('https://ims-alhashimy.herokuapp.com/installments')
     installments = await Installments.all().values('unique_id')
     installments = [n['unique_id'] for n in installments]
     installments_req = installments_req.json()
@@ -108,7 +109,7 @@ async def get_all():
                 new = Installments(id=installment['id'], name=installment['name'], unique_id=installment['unique_id'],
                                    sync_state=1)
                 await new.save(using_db=conn)
-    institutes_req = requests.get('http://127.0.0.1:8080/institutes')
+    institutes_req = requests.get('https://ims-alhashimy.herokuapp.com/institutes')
     institutes = await Institutes.all().values('name')
     institutes = [n['name'] for n in institutes]
     institutes_req = institutes_req.json()
@@ -118,7 +119,7 @@ async def get_all():
             async with in_transaction() as conn:
                 new = Institutes(id=institute['id'], name=institute['name'])
                 await new.save(using_db=conn)
-    posters_req = requests.get('http://127.0.0.1:8080/posters')
+    posters_req = requests.get('https://ims-alhashimy.herokuapp.com/posters')
     posters = await Posters.all().values('name')
     posters = [n['name'] for n in posters]
     posters_req = posters_req.json()
@@ -128,7 +129,7 @@ async def get_all():
             async with in_transaction() as conn:
                 new = Posters(id=poster['id'], name=poster['name'])
                 await new.save(using_db=conn)
-    states_req = requests.get('http://127.0.0.1:8080/states')
+    states_req = requests.get('https://ims-alhashimy.herokuapp.com/states')
     states = await States.all().values('unique_id')
     states = [n['unique_id'] for n in states]
     states_req = states_req.json()
@@ -142,7 +143,7 @@ async def get_all():
                 await new.save(using_db=conn)
         elif state['unique_id'] in states and state['delete_state'] == 0 and state['patch_state'] == 1:
             await States.filter(unique_id=state['unique_id']).update(name=state['name'])
-    students_req = requests.get('http://127.0.0.1:8080/students')
+    students_req = requests.get('https://ims-alhashimy.herokuapp.com/students')
     students = await Students.all().values('unique_id')
     students = [n['unique_id'] for n in students]
     student_req = students_req.json()
@@ -180,7 +181,7 @@ async def get_all():
                                                                          remaining_amount=student['remaining_amount'],
                                                                          poster_id=student['poster_id'],
                                                                          sync_state=1)
-    users_auth_req = requests.get('http://127.0.0.1:8080/users')
+    users_auth_req = requests.get('https://ims-alhashimy.herokuapp.com/users')
     users_auth_req = users_auth_req.json()
     users_auth_req = users_auth_req['users']
     users = await Users.all().values('unique_id')
@@ -191,7 +192,7 @@ async def get_all():
         elif user['unique_id'] not in users and user['delete_state'] == 0:
             async with in_transaction() as conn:
                 new = Users(username=user['username'], password=user['password'], unique_id=user['unique_id'],
-                            sync_state=1)
+                            sync_state=1, name=user['name'])
                 await new.save(using_db=conn)
                 for auth in user['authority']:
                     if auth['delete_state'] != 1:
@@ -202,7 +203,7 @@ async def get_all():
 
         elif user['unique_id'] in users and user['delete_state'] == 0 and user['patch_state'] == 1:
             await Users.filter(unique_id=user['unique_id']).update(sync_state=1, username=user['username'],
-                                                                   password=user['password'])
+                                                                   password=user['password'], name=user['name'])
             for auth in user['authority']:
                 if auth['delete_state'] != 1:
                     await UserAuth.filter(unique_id=auth['unique_id']).delete()
@@ -213,7 +214,7 @@ async def get_all():
                         await new2.save(using_db=conn)
                 if auth['delete_state'] == 1:
                     await UserAuth.filter(unique_id=auth['unique_id']).delete()
-    student_installments_req = requests.get('http://127.0.0.1:8080/student_installment')
+    student_installments_req = requests.get('https://ims-alhashimy.herokuapp.com/student_installment')
     student_installments = await StudentInstallments.all().values('unique_id')
     student_installments_req = student_installments_req.json()
     student_installments = [n['unique_id'] for n in student_installments]
@@ -243,26 +244,26 @@ async def get_all():
 async def sync():
     installments = await Installments.filter(sync_state=0).all()
     for install in installments:
-        req = requests.post("http://127.0.0.1:8080/installments",
+        req = requests.post("https://ims-alhashimy.herokuapp.com/installments",
                             json={"name": install.name, "unique_id": install.unique_id})
         if req.status_code == 200:
             await Installments.filter(id=install.id).update(sync_state=1)
     states = await States.filter(sync_state=0).all()
     for state in states:
-        req = requests.post("http://127.0.0.1:8080/state", json={"name": state.name,
+        req = requests.post("https://ims-alhashimy.herokuapp.com/state", json={"name": state.name,
                                                                  "unique_id": state.unique_id})
         if req.status_code == 200:
             await States.filter(id=state.id).update(sync_state=1)
     users = await get_users()
     for user in users:
-        req = requests.post('http://127.0.0.1:8080/users', json=user)
+        req = requests.post('https://ims-alhashimy.herokuapp.com/users', json=user)
         if req.status_code == 200:
             await Users.filter(unique_id=user['unique_id']).update(sync_state=1)
     students = await Students.filter(sync_state=0).all().prefetch_related('state', 'branch', 'governorate', 'institute',
                                                                           'poster')
     for student in students:
         json_student = student_json(student)
-        req = requests.post('http://127.0.0.1:8080/student', json=json_student)
+        req = requests.post('https://ims-alhashimy.herokuapp.com/student', json=json_student)
         if req.status_code == 200:
             await Students.filter(unique_id=json_student['unique_id']).update(sync_state=1)
     students = await Students.all().prefetch_related('state', 'branch', 'governorate', 'institute',
@@ -276,11 +277,11 @@ async def sync():
                             "invoice": insta.invoice,
                             "install_unique_id": insta.installment.unique_id,
                             "student_unique_id": student_install.unique_id}
-            req = requests.post('http://127.0.0.1:8080/student_installment', json=json_install)
+            req = requests.post('https://ims-alhashimy.herokuapp.com/student_installment', json=json_install)
             if req.status_code == 200:
                 await StudentInstallments.filter(id=insta.id).update(sync_state=1)
     all_del = await get_del()
-    req = requests.post('http://127.0.0.1:8080/del', json=all_del)
+    req = requests.post('https://ims-alhashimy.herokuapp.com/del', json=all_del)
     students_patch, states_patch, students_installment_patch, users_patch = await get_edits()
     for student_patch in students_patch:
         student_patch = await Students.filter(unique_id=student_patch).first().prefetch_related('state', 'branch',
@@ -289,12 +290,12 @@ async def sync():
                                                                                                 'poster')
         json_stu = student_json(student_patch)
         json_stu['patch'] = True
-        req = requests.post('http://127.0.0.1:8080/student', json=json_stu)
+        req = requests.post('https://ims-alhashimy.herokuapp.com/student', json=json_stu)
         if req.status_code == 200:
             await TemporaryPatch.filter(unique_id=json_stu['unique_id']).update(sync_state=1)
     for state_patch in states_patch:
         state_patch = await States.filter(unique_id=state_patch).first()
-        req = requests.post("http://127.0.0.1:8080/state", json={"name": state_patch.name,
+        req = requests.post("https://ims-alhashimy.herokuapp.com/state", json={"name": state_patch.name,
                                                                  "unique_id": state_patch.unique_id,
                                                                  "patch": True})
         if req.status_code == 200:
@@ -308,7 +309,7 @@ async def sync():
                       "invoice": install_patch.invoice,
                       "install_unique_id": install_patch.installment.unique_id,
                       "student_unique_id": install_patch.student.unique_id, "patch": True}
-        req = requests.post('http://127.0.0.1:8080/student_installment', json=data_patch)
+        req = requests.post('https://ims-alhashimy.herokuapp.com/student_installment', json=data_patch)
         if req.status_code == 200:
             await TemporaryPatch.filter(unique_id=install_patch.unique_id).update(sync_state=1)
     for user_auth in users_patch:
@@ -321,7 +322,7 @@ async def sync():
         user_json = {
             "username": user.username, "password": user.password, "authority": authority, "unique_id": user.unique_id
         }
-        req = requests.post('http://127.0.0.1:8080/users', json=user_json)
+        req = requests.post('https://ims-alhashimy.herokuapp.com/users', json=user_json)
         if req.status_code == 200:
             await TemporaryPatch.filter(unique_id=user.unique_id).update(sync_state=1)
     await get_all()

@@ -51,6 +51,7 @@ class Authority(BaseModel):
 class User(BaseModel):
     username: str
     password: str
+    name: Optional[str] = None
     authority: List[Authority]
 
     class Config:

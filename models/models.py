@@ -41,6 +41,7 @@ class Users(Model):
     password = fields.TextField()
     unique_id = fields.TextField()
     sync_state = fields.IntField(default=0)
+    name = fields.TextField(null=True)
 
 
 class UserAuth(Model):

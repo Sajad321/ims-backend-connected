@@ -375,7 +375,7 @@ async def get_users():
     users = await Users.all()
     result_list = []
     for user in users:
-        result_json = {"id": user.id, "username": user.username}
+        result_json = {"id": user.id, "username": user.username, 'name': user.name}
         authority = []
         auth = await UserAuth.filter(user_id=user.id).prefetch_related('state').all()
         for au in auth:
@@ -413,7 +413,7 @@ async def post_user(schema: User):
         unique_id = str(uuid4())
         password = hashlib.md5(schema.password.encode())
 
-        new = Users(username=schema.username, password=password.hexdigest(), unique_id=unique_id)
+        new = Users(username=schema.username, password=password.hexdigest(), unique_id=unique_id, name=schema.name)
         await new.save(using_db=conn)
         for state in schema.authority:
             auth = UserAuth(user_id=new.id, state_id=state.state_id, unique_id=unique_id)
@@ -445,13 +445,13 @@ async def patch_user(user_id, schema: User):
     get_user = await Users.filter(id=user_id).first()
     password = hashlib.md5(schema.password.encode())
 
-    await Users.filter(id=user_id).update(username=schema.username, password=password.hexdigest())
+    await Users.filter(id=user_id).update(username=schema.username, password=password.hexdigest(), name=schema.name)
     get_auth = await UserAuth.filter(user_id=get_user.id).first()
     await UserAuth.filter(user_id=get_user.id).delete()
     async with in_transaction() as conn:
         new = TemporaryPatch(unique_id=get_user.unique_id, model_id=4)
         await new.save(using_db=conn)
-        new_2 = TemporaryDelete(unique_id=get_auth.unique_id,  model_id=5)
+        new_2 = TemporaryDelete(unique_id=get_auth.unique_id, model_id=5)
         await new_2.save(using_db=conn)
     for state in schema.authority:
         async with in_transaction() as conn:
@@ -478,8 +478,18 @@ async def login(schema: Login):
             password = schema.password.encode()
             password = hashlib.md5(password)
             if user.password == password.hexdigest():
+                states = []
+                auth = await UserAuth.filter(user_id=user.id).all().prefetch_related('state')
+                for state in auth:
+                    state = {"name": state.state.name, "id": state.state.id}
+                    states.append(state)
                 return {
-                    "success": True
+                    "success": True,
+                    "token": str(uuid4()),
+                    "username": user.username,
+                    "name": user.name,
+                    "password": user.password,
+                    "authority": states
                 }
             else:
                 return {
