@@ -7,7 +7,7 @@ from models.models import Institutes, Governorates, States, Students, Installmen
 from tortoise.transactions import in_transaction
 from schemas.general import GeneralSchema, Student, StudentInstall, User, Login
 import hashlib
-
+import datetime
 # todo: complete sync_state
 # todo: complete api sync with online interaction
 general_router = APIRouter()
@@ -142,11 +142,12 @@ async def del_state(state_id):
 async def post_student(schema: Student):
     async with in_transaction() as conn:
         unique_id = str(uuid4())
+        date_now = datetime.datetime.now().strftime('%Y-%m-%d')
         new = Students(name=schema.name, school=schema.school, branch_id=schema.branch_id,
                        governorate_id=schema.governorate_id, institute_id=schema.institute_id,
                        state_id=schema.state_id, first_phone=schema.first_phone,
                        second_phone=schema.second_phone, code=schema.code, telegram_user=schema.telegram_username
-                       , created_at=schema.created_at, note=schema.note, total_amount=schema.total_amount,
+                       , created_at=date_now, note=schema.note, total_amount=schema.total_amount,
                        remaining_amount=schema.remaining_amount, poster_id=schema.poster_id, unique_id=unique_id)
         await new.save(using_db=conn)
         for student_install in schema.installments:

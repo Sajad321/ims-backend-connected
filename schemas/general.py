@@ -33,7 +33,6 @@ class Student(BaseModel):
     total_amount: Optional[float] = None
     remaining_amount: Optional[float] = None
     note: Optional[str] = None
-    created_at: Optional[str]
     installments: List[StudentInstall]
     state_id: int
 
