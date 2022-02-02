@@ -534,3 +534,16 @@ async def get_institutes():
     return {
         "institutes": await Institutes.all()
     }
+
+
+@general_router.delete('/user/{user_id}')
+async def del_user(user_id):
+    get_user = await Users.filter(user_id=user_id).first()
+    await Users.filter(user_id=user_id).delete()
+    async with in_transaction() as conn:
+        new = TemporaryDelete(unique_id=get_user.unique_id, model_id=4)
+        await new.save(using_db=conn)
+    return {
+        "success": True, "user": get_user.name
+    }
+
