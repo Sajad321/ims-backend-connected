@@ -382,7 +382,7 @@ async def get_users():
         authority = []
         auth = await UserAuth.filter(user_id=user.id).prefetch_related('state').all()
         for au in auth:
-            auth_json = {"authority_id": au.id, "state": au.state.name, "state_id": au.state.id}
+            auth_json = {"authority_id": au.id, "state": au.state.name, "id": au.state.id}
             authority.append(auth_json)
         result_json['authority'] = authority
         result_list.append(result_json)
