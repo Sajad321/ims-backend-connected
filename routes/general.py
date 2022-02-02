@@ -190,6 +190,7 @@ async def post_student(schema: Student):
 
 @general_router.patch('/students/{student_id}')
 async def patch_student(student_id, schema: Student):
+    date_now = datetime.datetime.now().strftime('%Y-%m-%d')
     await Students.filter(id=student_id).update(name=schema.name, school=schema.school,
                                                 branch_id=schema.branch_id,
                                                 governorate_id=schema.governorate_id,
@@ -199,7 +200,7 @@ async def patch_student(student_id, schema: Student):
                                                 second_phone=schema.second_phone,
                                                 code=schema.code,
                                                 telegram_user=schema.telegram_username
-                                                , created_at=schema.created_at,
+                                                , created_at=date_now,
                                                 note=schema.note,
                                                 total_amount=schema.total_amount,
                                                 remaining_amount=schema.remaining_amount,
@@ -338,7 +339,7 @@ async def get_students():
         student_install = await StudentInstallments.filter(student_id=stu.id).prefetch_related('installment').all()
         install_list = []
         for stu_install in student_install:
-            single_install = {"id": stu_install.id, "date": stu_install.date, "amount": stu_install.amount,
+            single_install = {"install_id": stu_install.id, "date": stu_install.date, "amount": stu_install.amount,
                               "invoice": stu_install.invoice, "installment_id": stu_install.installment.id,
                               "installment_name": stu_install.installment.name}
             install_list.append(single_install)
