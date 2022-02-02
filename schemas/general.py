@@ -12,7 +12,7 @@ class GeneralSchema(BaseModel):
 class StudentInstall(BaseModel):
     install_id: int
     date: Optional[str] = None
-    amount: float = 0.0
+    amount: Optional[float] = 0.0
     invoice: Optional[int] = None
 
     class Config:
@@ -25,8 +25,8 @@ class Student(BaseModel):
     branch_id: Optional[int] = None
     institute_id: Optional[int] = None
     governorate_id: Optional[int] = None
-    first_phone: Optional[int] = None
-    second_phone: Optional[int] = None
+    first_phone: Optional[str] = None
+    second_phone: Optional[str] = None
     poster_id: Optional[int] = None
     code: Optional[int] = None
     telegram_username: Optional[str] = None
@@ -41,7 +41,7 @@ class Student(BaseModel):
 
 
 class Authority(BaseModel):
-    state_id: int
+    id: int
 
     class Config:
         orm_mode = True

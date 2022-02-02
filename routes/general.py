@@ -145,8 +145,8 @@ async def post_student(schema: Student):
         date_now = datetime.datetime.now().strftime('%Y-%m-%d')
         new = Students(name=schema.name, school=schema.school, branch_id=schema.branch_id,
                        governorate_id=schema.governorate_id, institute_id=schema.institute_id,
-                       state_id=schema.state_id, first_phone=schema.first_phone,
-                       second_phone=schema.second_phone, code=schema.code, telegram_user=schema.telegram_username
+                       state_id=schema.state_id, first_phone=int(schema.first_phone),
+                       second_phone=int(schema.second_phone), code=schema.code, telegram_user=schema.telegram_username
                        , created_at=date_now, note=schema.note, total_amount=schema.total_amount,
                        remaining_amount=schema.remaining_amount, poster_id=schema.poster_id, unique_id=unique_id)
         await new.save(using_db=conn)
@@ -417,7 +417,7 @@ async def post_user(schema: User):
         new = Users(username=schema.username, password=password.hexdigest(), unique_id=unique_id, name=schema.name)
         await new.save(using_db=conn)
         for state in schema.authority:
-            auth = UserAuth(user_id=new.id, state_id=state.state_id, unique_id=unique_id)
+            auth = UserAuth(user_id=new.id, state_id=state.id, unique_id=unique_id)
             await auth.save(using_db=conn)
     return {
         "success": True
@@ -457,7 +457,7 @@ async def patch_user(user_id, schema: User):
     for state in schema.authority:
         async with in_transaction() as conn:
             unique_id = str(uuid4())
-            auth = UserAuth(user_id=get_user.id, state_id=state.state_id, unique_id=unique_id)
+            auth = UserAuth(user_id=get_user.id, state_id=state.id, unique_id=unique_id)
             await auth.save(using_db=conn)
             new = TemporaryPatch(unique_id=auth.unique_id, model_id=5)
             await new.save(using_db=conn)
@@ -525,4 +525,12 @@ async def get_posters():
     return {
         "posters": await Posters.all(),
         "success": True
+    }
+
+
+@general_router.get('/institutes')
+async def get_institutes():
+
+    return{
+        "institutes": await Institutes.all()
     }
