@@ -8,6 +8,7 @@ from tortoise.transactions import in_transaction
 from schemas.general import GeneralSchema, Student, StudentInstall, User, Login
 import hashlib
 import datetime
+
 # todo: complete sync_state
 # todo: complete api sync with online interaction
 general_router = APIRouter()
@@ -530,7 +531,6 @@ async def get_posters():
 
 @general_router.get('/institutes')
 async def get_institutes():
-
-    return{
+    return {
         "institutes": await Institutes.all()
     }
