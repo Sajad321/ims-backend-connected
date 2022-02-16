@@ -4,6 +4,7 @@ from typing import Optional, List
 
 class GeneralSchema(BaseModel):
     name: str
+    users: Optional[List[int]] = None
 
     class Config:
         orm_mode = True
@@ -28,7 +29,8 @@ class Student(BaseModel):
     first_phone: Optional[str] = None
     second_phone: Optional[str] = None
     poster_id: Optional[int] = None
-    code: Optional[int] = None
+    code_1: Optional[int] = None
+    code_2: Optional[int] = None
     telegram_username: Optional[str] = None
     total_amount: Optional[float] = None
     remaining_amount: Optional[float] = None
@@ -51,7 +53,8 @@ class User(BaseModel):
     username: str
     password: str
     name: Optional[str] = None
-    authority: List[Authority]
+    authority: Optional[List[Authority]]
+    super: Optional[bool] = False
 
     class Config:
         orm_mode = True

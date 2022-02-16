@@ -52,6 +52,13 @@ async def post_state(schema: GeneralSchema):
         unique_id = str(uuid4())
         new = States(name=schema.name, unique_id=unique_id)
         await new.save(using_db=conn)
+        user = await Users.filter(super=1).first()
+        sup = UserAuth(state_id=new.id, user_id=user.id, unique_id=str(uuid4()))
+        await sup.save(using_db=conn)
+        for user_id in schema.users:
+            auth = UserAuth(state_id=new.id, user_id=user_id, unique_id=str(uuid4()))
+            await auth.save(using_db=conn)
+
     return {
         "success": True,
         "name": new.name
@@ -81,6 +88,9 @@ async def patch_state(state_id, schema: GeneralSchema):
         if temporary is None:
             new = TemporaryPatch(unique_id=patch['unique_id'], model_id=2)
             await new.save(using_db=conn)
+        for user_id in schema.users:
+            auth = UserAuth(state_id=state_id, user_id=user_id, unique_id=str(uuid4()))
+            await auth.save(using_db=conn)
     return {
         "success": True,
         "name": schema.name
@@ -147,7 +157,8 @@ async def post_student(schema: Student):
         new = Students(name=schema.name, school=schema.school, branch_id=schema.branch_id,
                        governorate_id=schema.governorate_id, institute_id=schema.institute_id,
                        state_id=schema.state_id, first_phone=int(schema.first_phone),
-                       second_phone=int(schema.second_phone), code=schema.code, telegram_user=schema.telegram_username
+                       second_phone=int(schema.second_phone), code_1=schema.code_1, code_2=schema.code_2,
+                       telegram_user=schema.telegram_username
                        , created_at=date_now, note=schema.note, total_amount=schema.total_amount,
                        remaining_amount=schema.remaining_amount, poster_id=schema.poster_id, unique_id=unique_id)
         await new.save(using_db=conn)
@@ -197,7 +208,8 @@ async def patch_student(student_id, schema: Student):
                                                 state_id=schema.state_id,
                                                 first_phone=schema.first_phone,
                                                 second_phone=schema.second_phone,
-                                                code=schema.code,
+                                                code_1=schema.code_1,
+                                                code_2=schema.code_2,
                                                 telegram_user=schema.telegram_username
                                                 , created_at=schema.created_at,
                                                 note=schema.note,
@@ -317,7 +329,8 @@ async def get_students():
         student_json['name'] = stu.name
         student_json['id'] = stu.id
         student_json['school'] = stu.school
-        student_json['code'] = stu.code
+        student_json['code_1'] = stu.code_1
+        student_json['code_2'] = stu.code_2
         student_json['first_phone'] = stu.first_phone
         student_json['second_phone'] = stu.second_phone
         student_json['telegram_user'] = stu.telegram_user
@@ -414,12 +427,19 @@ async def post_user(schema: User):
     async with in_transaction() as conn:
         unique_id = str(uuid4())
         password = hashlib.md5(schema.password.encode())
-
         new = Users(username=schema.username, password=password.hexdigest(), unique_id=unique_id, name=schema.name)
+        if schema.super:
+            new = Users(username=schema.username, password=password.hexdigest(), unique_id=unique_id, name=schema.name,
+                        super=1)
         await new.save(using_db=conn)
-        for state in schema.authority:
-            auth = UserAuth(user_id=new.id, state_id=state.id, unique_id=unique_id)
-            await auth.save(using_db=conn)
+        if not schema.super:
+            for state in schema.authority:
+                auth = UserAuth(user_id=new.id, state_id=state.id, unique_id=unique_id)
+                await auth.save(using_db=conn)
+        else:
+            for state in await UserAuth.all():
+                auth = UserAuth(user_id=new.id, state_id=state.id, unique_id=unique_id)
+                await auth.save(using_db=conn)
     return {
         "success": True
     }

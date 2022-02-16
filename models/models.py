@@ -42,6 +42,7 @@ class Users(Model):
     unique_id = fields.TextField()
     sync_state = fields.IntField(default=0)
     name = fields.TextField(null=True)
+    super = fields.IntField(default=0)
 
 
 class UserAuth(Model):
@@ -65,7 +66,8 @@ class Students(Model):
     state = fields.ForeignKeyField("models.States", null=True)
     first_phone = fields.IntField(null=True)
     second_phone = fields.IntField(null=True)
-    code = fields.IntField(nul=True)
+    code_1 = fields.IntField(nul=True)
+    code_2 = fields.IntField(nul=True)
     telegram_user = fields.TextField(null=True)
     created_at = fields.DateField(null=True)
     note = fields.TextField(null=True)

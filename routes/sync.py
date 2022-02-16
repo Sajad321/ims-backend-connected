@@ -69,7 +69,7 @@ def student_json(student) -> dict:
     return {"name": student.name, "school": student.school, "branch_id": student.branch.id,
             "governorate_id": student.governorate.id, "institute_id": student.institute.id,
             "state_unique_id": student.state.unique_id, "first_phone": student.first_phone,
-            "second_phone": student.second_phone, "code": student.code,
+            "second_phone": student.second_phone, "code_1": student.code_1,"code_2": student.code_2,
             "telegram_user": student.telegram_user,
             "created_at": str(student.created_at), "note": student.note,
             "total_amount": student.total_amount,
@@ -157,7 +157,7 @@ async def get_all():
                 new = Students(name=student['name'], school=student['school'], branch_id=student['branch_id'],
                                governorate_id=student['governorate_id'], institute_id=student['institute_id'],
                                state_id=st.id, first_phone=student['first_phone'],
-                               second_phone=student['second_phone'], code=student['code'],
+                               second_phone=student['second_phone'], code_1=student['code_1'],code_2=student['code_2'],
                                telegram_user=student['telegram_user']
                                , created_at=student['created_at'], note=student['note'],
                                total_amount=student['total_amount'],
@@ -173,7 +173,8 @@ async def get_all():
                                                                          state_id=st.id,
                                                                          first_phone=student['first_phone'],
                                                                          second_phone=student['second_phone'],
-                                                                         code=student['code'],
+                                                                         code_1=student['code_1'],
+                                                                         code_2=student['code_2'],
                                                                          telegram_user=student['telegram_user']
                                                                          , created_at=student['created_at'],
                                                                          note=student['note'],
