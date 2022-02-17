@@ -88,9 +88,12 @@ async def patch_state(state_id, schema: GeneralSchema):
         if temporary is None:
             new = TemporaryPatch(unique_id=patch['unique_id'], model_id=2)
             await new.save(using_db=conn)
+        for user in await Users.filter(super=0):
+            await UserAuth.filter(state_id=state_id, user_id=user.id).delete()
         for user_id in schema.users:
             auth = UserAuth(state_id=state_id, user_id=user_id.id, unique_id=str(uuid4()))
             await auth.save(using_db=conn)
+                
     return {
         "success": True,
         "name": schema.name
@@ -151,7 +154,6 @@ async def del_state(state_id):
 # }`
 @general_router.post('/students')
 async def post_student(schema: Student):
-    print(schema)
     async with in_transaction() as conn:
         unique_id = str(uuid4())
         date_now = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -476,8 +478,9 @@ async def patch_user(user_id, schema: User):
     async with in_transaction() as conn:
         new = TemporaryPatch(unique_id=get_user.unique_id, model_id=4)
         await new.save(using_db=conn)
-        new_2 = TemporaryDelete(unique_id=get_auth.unique_id, model_id=5)
-        await new_2.save(using_db=conn)
+        if get_auth:
+            new_2 = TemporaryDelete(unique_id=get_auth.unique_id, model_id=5)
+            await new_2.save(using_db=conn)
     for state in schema.authority:
         async with in_transaction() as conn:
             unique_id = str(uuid4())
