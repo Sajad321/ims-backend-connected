@@ -5,3 +5,5 @@ aerich.ini
 db.sqlite3
 
 IMS
+dist
+build

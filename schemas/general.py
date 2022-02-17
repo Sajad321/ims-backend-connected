@@ -2,9 +2,15 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 
+class Users(BaseModel):
+    id: int
+
+    class Config:
+        orm_mode = True
+        
 class GeneralSchema(BaseModel):
     name: str
-    users: Optional[List[int]] = None
+    users: Optional[List[Users]] = None
 
     class Config:
         orm_mode = True
@@ -23,14 +29,14 @@ class StudentInstall(BaseModel):
 class Student(BaseModel):
     name: str
     school: Optional[str] = None
-    branch_id: Optional[int] = None
-    institute_id: Optional[int] = None
-    governorate_id: Optional[int] = None
+    branch_id: Optional[str] = None
+    institute_id: Optional[str] = None
+    governorate_id: Optional[str] = None
     first_phone: Optional[str] = None
     second_phone: Optional[str] = None
-    poster_id: Optional[int] = None
-    code_1: Optional[int] = None
-    code_2: Optional[int] = None
+    poster_id: Optional[str] = None
+    code_1: Optional[str] = None
+    code_2: Optional[str] = None
     telegram_username: Optional[str] = None
     total_amount: Optional[float] = None
     remaining_amount: Optional[float] = None

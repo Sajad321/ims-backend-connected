@@ -56,7 +56,7 @@ async def post_state(schema: GeneralSchema):
         sup = UserAuth(state_id=new.id, user_id=user.id, unique_id=str(uuid4()))
         await sup.save(using_db=conn)
         for user_id in schema.users:
-            auth = UserAuth(state_id=new.id, user_id=user_id, unique_id=str(uuid4()))
+            auth = UserAuth(state_id=new.id, user_id=user_id.id, unique_id=str(uuid4()))
             await auth.save(using_db=conn)
 
     return {
@@ -89,7 +89,7 @@ async def patch_state(state_id, schema: GeneralSchema):
             new = TemporaryPatch(unique_id=patch['unique_id'], model_id=2)
             await new.save(using_db=conn)
         for user_id in schema.users:
-            auth = UserAuth(state_id=state_id, user_id=user_id, unique_id=str(uuid4()))
+            auth = UserAuth(state_id=state_id, user_id=user_id.id, unique_id=str(uuid4()))
             await auth.save(using_db=conn)
     return {
         "success": True,
@@ -151,13 +151,14 @@ async def del_state(state_id):
 # }`
 @general_router.post('/students')
 async def post_student(schema: Student):
+    print(schema)
     async with in_transaction() as conn:
         unique_id = str(uuid4())
         date_now = datetime.datetime.now().strftime('%Y-%m-%d')
         new = Students(name=schema.name, school=schema.school, branch_id=schema.branch_id,
                        governorate_id=schema.governorate_id, institute_id=schema.institute_id,
                        state_id=schema.state_id, first_phone=int(schema.first_phone),
-                       second_phone=int(schema.second_phone), code_1=schema.code_1, code_2=schema.code_2,
+                       second_phone=schema.second_phone, code_1=schema.code_1, code_2=schema.code_2,
                        telegram_user=schema.telegram_username
                        , created_at=date_now, note=schema.note, total_amount=schema.total_amount,
                        remaining_amount=schema.remaining_amount, poster_id=schema.poster_id, unique_id=unique_id)
@@ -334,7 +335,7 @@ async def get_students():
         student_json['code_2'] = stu.code_2
         student_json['first_phone'] = stu.first_phone
         student_json['second_phone'] = stu.second_phone
-        student_json['telegram_user'] = stu.telegram_user
+        student_json['telegram_username'] = stu.telegram_user
         student_json['created_at'] = stu.created_at
         student_json['note'] = stu.note
         student_json['total_amount'] = stu.total_amount
@@ -391,11 +392,11 @@ async def get_users():
     users = await Users.all()
     result_list = []
     for user in users:
-        result_json = {"id": user.id, "username": user.username, 'name': user.name}
+        result_json = {"id": user.id, "username": user.username, 'name': user.name, "super": user.super}
         authority = []
         auth = await UserAuth.filter(user_id=user.id).prefetch_related('state').all()
         for au in auth:
-            auth_json = {"authority_id": au.id, "state": au.state.name, "id": au.state.id}
+            auth_json = {"authority_id": au.id, "name": au.state.name, "id": au.state.id}
             authority.append(auth_json)
         result_json['authority'] = authority
         result_list.append(result_json)
@@ -425,6 +426,7 @@ async def get_users():
 # }`
 @general_router.post('/users')
 async def post_user(schema: User):
+    print(schema)
     async with in_transaction() as conn:
         unique_id = str(uuid4())
         password = hashlib.md5(schema.password.encode())
@@ -438,7 +440,7 @@ async def post_user(schema: User):
                 auth = UserAuth(user_id=new.id, state_id=state.id, unique_id=unique_id)
                 await auth.save(using_db=conn)
         else:
-            for state in await UserAuth.all():
+            for state in await States.all():
                 auth = UserAuth(user_id=new.id, state_id=state.id, unique_id=unique_id)
                 await auth.save(using_db=conn)
     return {
@@ -512,7 +514,8 @@ async def login(schema: Login):
                     "username": user.username,
                     "name": user.name,
                     "password": user.password,
-                    "authority": states
+                    "authority": states,
+                    "super": user.super
                 }
             else:
                 return {
@@ -557,10 +560,10 @@ async def get_institutes():
     }
 
 
-@general_router.delete('/user/{user_id}')
+@general_router.delete('/users/{user_id}')
 async def del_user(user_id):
-    get_user = await Users.filter(user_id=user_id).first()
-    await Users.filter(user_id=user_id).delete()
+    get_user = await Users.filter(id=user_id).first()
+    await Users.filter(id=user_id).delete()
     async with in_transaction() as conn:
         new = TemporaryDelete(unique_id=get_user.unique_id, model_id=4)
         await new.save(using_db=conn)
