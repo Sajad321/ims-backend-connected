@@ -52,9 +52,11 @@ async def post_state(schema: GeneralSchema):
         unique_id = str(uuid4())
         new = States(name=schema.name, unique_id=unique_id)
         await new.save(using_db=conn)
-        user = await Users.filter(super=1).first()
-        sup = UserAuth(state_id=new.id, user_id=user.id, unique_id=str(uuid4()))
-        await sup.save(using_db=conn)
+        users = await Users.filter(super=1).all()
+        for user in users:
+            sup = UserAuth(state_id=new.id, user_id=user.id, unique_id=str(uuid4()))
+            await sup.save(using_db=conn)
+
         for user_id in schema.users:
             auth = UserAuth(state_id=new.id, user_id=user_id.id, unique_id=str(uuid4()))
             await auth.save(using_db=conn)
@@ -159,10 +161,10 @@ async def post_student(schema: Student):
         date_now = datetime.datetime.now().strftime('%Y-%m-%d')
         new = Students(name=schema.name, school=schema.school, branch_id=schema.branch_id,
                        governorate_id=schema.governorate_id, institute_id=schema.institute_id,
-                       state_id=schema.state_id, first_phone=int(schema.first_phone),
+                       state_id=schema.state_id, first_phone=schema.first_phone,
                        second_phone=schema.second_phone, code_1=schema.code_1, code_2=schema.code_2,
                        telegram_user=schema.telegram_username
-                       , created_at=date_now, note=schema.note, total_amount=schema.total_amount,
+                       , created_at=schema.created_at, note=schema.note, total_amount=schema.total_amount,
                        remaining_amount=schema.remaining_amount, poster_id=schema.poster_id, unique_id=unique_id)
         await new.save(using_db=conn)
         for student_install in schema.installments:
@@ -366,6 +368,47 @@ async def get_students():
     return {"students": students_list, "success": True}
 
 
+@general_router.get('/states/{state_id}/students')
+async def get_state_students(state_id):
+    students = await Students.filter(state_id=state_id).prefetch_related('branch', 'governorate', 'institute', 'state', 'poster').all()
+    students_list = []
+    student_json = {}
+    for stu in students:
+        student_json['name'] = stu.name
+        student_json['id'] = stu.id
+        student_json['school'] = stu.school
+        student_json['code_1'] = stu.code_1
+        student_json['code_2'] = stu.code_2
+        student_json['first_phone'] = stu.first_phone
+        student_json['second_phone'] = stu.second_phone
+        student_json['telegram_username'] = stu.telegram_user
+        student_json['created_at'] = stu.created_at
+        student_json['note'] = stu.note
+        student_json['total_amount'] = stu.total_amount
+        student_json['remaining_amount'] = stu.remaining_amount
+        if stu.branch is not None:
+            student_json['branch'] = {"id": stu.branch.id, 'name': stu.branch.name}
+        if stu.governorate is not None:
+            student_json['governorate'] = {"id": stu.governorate.id, "name": stu.governorate.name}
+        if stu.institute is not None:
+            student_json['institute'] = {'id': stu.institute.id, "name": stu.institute.name}
+        if stu.state is not None:
+            student_json['state'] = {'id': stu.state.id, 'name': stu.state.name}
+        if stu.poster is not None:
+            student_json['poster'] = {'id': stu.poster.id, 'name': stu.poster.name}
+        student_install = await StudentInstallments.filter(student_id=stu.id).prefetch_related('installment').all()
+        install_list = []
+        for stu_install in student_install:
+            single_install = {"install_id": stu_install.id, "date": stu_install.date, "amount": stu_install.amount,
+                              "invoice": stu_install.invoice, "installment_id": stu_install.installment.id,
+                              "installment_name": stu_install.installment.name}
+            install_list.append(single_install)
+        student_json['installments'] = install_list
+        students_list.append(student_json)
+        student_json = {}
+
+    return {"students": students_list, "success": True}
+
 # GET `/users`
 #
 # - Get users from database.
@@ -428,7 +471,6 @@ async def get_users():
 # }`
 @general_router.post('/users')
 async def post_user(schema: User):
-    print(schema)
     async with in_transaction() as conn:
         unique_id = str(uuid4())
         password = hashlib.md5(schema.password.encode())
@@ -573,4 +615,3 @@ async def del_user(user_id):
     return {
         "success": True, "user": get_user.name
     }
-
