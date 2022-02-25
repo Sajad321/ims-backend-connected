@@ -2,7 +2,6 @@ venv
 .idea
 migrations
 aerich.ini
-db.sqlite3
 
 IMS
 dist

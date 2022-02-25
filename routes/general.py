@@ -95,7 +95,7 @@ async def patch_state(state_id, schema: GeneralSchema):
         for user_id in schema.users:
             auth = UserAuth(state_id=state_id, user_id=user_id.id, unique_id=str(uuid4()))
             await auth.save(using_db=conn)
-                
+
     return {
         "success": True,
         "name": schema.name
@@ -164,7 +164,7 @@ async def post_student(schema: Student):
                        state_id=schema.state_id, first_phone=schema.first_phone,
                        second_phone=schema.second_phone, code_1=schema.code_1, code_2=schema.code_2,
                        telegram_user=schema.telegram_username
-                       , created_at=schema.created_at, note=schema.note, total_amount=schema.total_amount,
+                       , created_at=date_now, note=schema.note, total_amount=schema.total_amount,
                        remaining_amount=schema.remaining_amount, poster_id=schema.poster_id, unique_id=unique_id)
         await new.save(using_db=conn)
         for student_install in schema.installments:
@@ -357,8 +357,8 @@ async def get_students():
         student_install = await StudentInstallments.filter(student_id=stu.id).prefetch_related('installment').all()
         install_list = []
         for stu_install in student_install:
-            single_install = {"install_id": stu_install.id, "date": stu_install.date, "amount": stu_install.amount,
-                              "invoice": stu_install.invoice, "installment_id": stu_install.installment.id,
+            single_install = {"date": stu_install.date, "amount": stu_install.amount,
+                              "invoice": stu_install.invoice, "install_id": stu_install.installment.id,
                               "installment_name": stu_install.installment.name}
             install_list.append(single_install)
         student_json['installments'] = install_list
@@ -370,7 +370,8 @@ async def get_students():
 
 @general_router.get('/states/{state_id}/students')
 async def get_state_students(state_id):
-    students = await Students.filter(state_id=state_id).prefetch_related('branch', 'governorate', 'institute', 'state', 'poster').all()
+    students = await Students.filter(state_id=state_id).prefetch_related('branch', 'governorate', 'institute', 'state',
+                                                                         'poster').all()
     students_list = []
     student_json = {}
     for stu in students:
@@ -399,8 +400,8 @@ async def get_state_students(state_id):
         student_install = await StudentInstallments.filter(student_id=stu.id).prefetch_related('installment').all()
         install_list = []
         for stu_install in student_install:
-            single_install = {"install_id": stu_install.id, "date": stu_install.date, "amount": stu_install.amount,
-                              "invoice": stu_install.invoice, "installment_id": stu_install.installment.id,
+            single_install = {"date": stu_install.date, "amount": stu_install.amount,
+                              "invoice": stu_install.invoice, "install_id": stu_install.installment.id,
                               "installment_name": stu_install.installment.name}
             install_list.append(single_install)
         student_json['installments'] = install_list
@@ -408,6 +409,7 @@ async def get_state_students(state_id):
         student_json = {}
 
     return {"students": students_list, "success": True}
+
 
 # GET `/users`
 #
@@ -513,24 +515,17 @@ async def post_user(schema: User):
 async def patch_user(user_id, schema: User):
     get_user = await Users.filter(id=user_id).first()
     password = hashlib.md5(schema.password.encode())
-
-    await Users.filter(id=user_id).update(username=schema.username, password=password.hexdigest(), name=schema.name)
-    get_auth = await UserAuth.filter(user_id=get_user.id).first()
+    await Users.filter(id=user_id).update(username=schema.username, password=password.hexdigest(), name=schema.name,
+                                          sync_state=0)
+    # get_auth = await UserAuth.filter(user_id=get_user.id).first()
     await UserAuth.filter(user_id=get_user.id).delete()
     async with in_transaction() as conn:
-        new = TemporaryPatch(unique_id=get_user.unique_id, model_id=4)
-        await new.save(using_db=conn)
-        if get_auth:
-            new_2 = TemporaryDelete(unique_id=get_auth.unique_id, model_id=5)
-            await new_2.save(using_db=conn)
-    for state in schema.authority:
-        async with in_transaction() as conn:
+        print(len(schema.authority))
+        for state in schema.authority:
+            print(state.id)
             unique_id = str(uuid4())
             auth = UserAuth(user_id=get_user.id, state_id=state.id, unique_id=unique_id)
             await auth.save(using_db=conn)
-            new = TemporaryPatch(unique_id=auth.unique_id, model_id=5)
-            await new.save(using_db=conn)
-
     return {
         "success": True
     }
