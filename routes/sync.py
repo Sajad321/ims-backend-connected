@@ -246,19 +246,20 @@ async def get_all():
         if req['unique_id'] not in student_installments and req['delete_state'] == 0:
             stu = await Students.filter(unique_id=req['_student']['unique_id']).first()
             install = await Installments.filter(unique_id=req['_installment']['unique_id']).first()
-            async with in_transaction() as conn:
-                new = StudentInstallments(unique_id=req['unique_id'], sync_state=1, invoice=req['invoice'],
-                                          installment_id=install.id, student_id=stu.id, date=req['date'],
-                                          amount=req['amount'])
-
-                await new.save(using_db=conn)
+            if stu is not None:
+                async with in_transaction() as conn:
+                    new = StudentInstallments(unique_id=req['unique_id'], sync_state=1, invoice=req['invoice'],
+                                              installment_id=install.id, student_id=stu.id, date=req['date'],
+                                              amount=req['amount'])
+                    await new.save(using_db=conn)
         if req['unique_id'] in student_installments and req['delete_state'] == 0 and req['patch_state'] == 1:
             stu = await Students.filter(unique_id=req['_student']['unique_id']).first()
             install = await Installments.filter(unique_id=req['_installment']['unique_id']).first()
-            await Students.filter(unique_id=req['unique_id']).update(sync_state=1, invoice=req['invoice'],
-                                                                     installment_id=install.id, student_id=stu.id,
-                                                                     date=req['date'],
-                                                                     amount=req['amount'])
+            if stu is not None:
+                await Students.filter(unique_id=req['unique_id']).update(sync_state=1, invoice=req['invoice'],
+                                                                         installment_id=install.id, student_id=stu.id,
+                                                                         date=req['date'],
+                                                                         amount=req['amount'])
 
 
 @sync_router.get('/sync')

@@ -2,7 +2,6 @@ venv
 .idea
 migrations
 aerich.ini
-
 IMS
 dist
 build

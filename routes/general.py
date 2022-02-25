@@ -116,12 +116,10 @@ async def patch_state(state_id, schema: GeneralSchema):
 async def del_state(state_id):
     q = await States.filter(id=state_id).first()
     await States.filter(id=state_id).delete()
-    temporary = await TemporaryDelete.filter(unique_id=q.unique_id).first()
     await TemporaryPatch.filter(unique_id=q.unique_id).delete()
-    if temporary is None:
-        async with in_transaction() as conn:
-            new = TemporaryDelete(unique_id=q.unique_id, model_id=2)
-            await new.save(using_db=conn)
+    async with in_transaction() as conn:
+        new = TemporaryDelete(unique_id=q.unique_id, model_id=2)
+        await new.save(using_db=conn)
     return {
         "success": True,
         "name": q.name
