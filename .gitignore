@@ -5,3 +5,5 @@ aerich.ini
 IMS
 dist
 build
+
+__pycache__
