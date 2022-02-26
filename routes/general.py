@@ -1,13 +1,15 @@
 import os
 import signal
+from typing import Optional
 from uuid import uuid4
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from models.models import Institutes, Governorates, States, Students, Installments, StudentInstallments, \
     Users, UserAuth, TemporaryPatch, TemporaryDelete, Branches, Posters
 from tortoise.transactions import in_transaction
 from schemas.general import GeneralSchema, Student, StudentInstall, User, Login
 import hashlib
 import datetime
+from fastapi_pagination import paginate, Params as ps
 
 # todo: complete sync_state
 # todo: complete api sync with online interaction
@@ -324,11 +326,22 @@ async def del_student(student_id):
 #   }
 # ],
 # "success":True}
+class Params(ps):
+    search: Optional[str] = None
+
+
 @general_router.get('/students')
-async def get_students():
-    students = await Students.all().prefetch_related('branch', 'governorate', 'institute', 'state', 'poster').all()
-    students_list = []
+async def get_students(params: Params = Depends()):
+    students = None
+    if params.search is None:
+        students = await Students.all().prefetch_related('branch', 'governorate', 'institute', 'state', 'poster').all()
+    else:
+        students = await Students.filter(name__icontains=params.search).all().prefetch_related('branch', 'governorate',
+                                                                                               'institute', 'state',
+                                                                                               'poster').all()
+    result = []
     student_json = {}
+    count = len(students)
     for stu in students:
         student_json['name'] = stu.name
         student_json['id'] = stu.id
@@ -360,10 +373,20 @@ async def get_students():
                               "installment_name": stu_install.installment.name}
             install_list.append(single_install)
         student_json['installments'] = install_list
-        students_list.append(student_json)
+        result.append(student_json)
         student_json = {}
-
-    return {"students": students_list, "success": True}
+    result = paginate(result, params)
+    t = list(result)
+    item = t[0][1]
+    if len(students) <= t[3][1]:
+        pages = 1
+    else:
+        pages = int(round(len(students) / t[3][1]))
+    return {"students": item, "success": True, "total_students": count,
+            "total_in_current_page": len(item),
+            "page": t[2][1],
+            "size": t[3][1],
+            "total_pages": pages}
 
 
 @general_router.get('/states/{state_id}/students')
