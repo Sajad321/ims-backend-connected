@@ -15,7 +15,7 @@ total_hours_wasted_here = 48
 """
 sync_router = APIRouter()
 
-HOST = "https://imsalhashimy-busy-kudu-vn.eu-gb.mybluemix.net"
+HOST = "http://127.0.0.1:8090"
 
 
 async def get_users() -> list:
@@ -183,7 +183,8 @@ async def get_all():
                                governorate_id=student['governorate_id'], institute_id=student['institute_id'],
                                state_id=st.id, first_phone=student['first_phone'],
                                second_phone=student['second_phone'], code_1=student['code_1'], code_2=student['code_2'],
-                               telegram_user=student['telegram_user'], created_at=student['created_at'], note=student['note'],
+                               telegram_user=student['telegram_user'], created_at=student['created_at'],
+                               note=student['note'],
                                total_amount=student['total_amount'],
                                remaining_amount=student['remaining_amount'], poster_id=student['poster_id'],
                                unique_id=student['unique_id'], sync_state=1)
@@ -200,7 +201,8 @@ async def get_all():
                                                                          code_1=student['code_1'],
                                                                          code_2=student['code_2'],
                                                                          telegram_user=student[
-                                                                             'telegram_user'], created_at=student['created_at'],
+                                                                             'telegram_user'],
+                                                                         created_at=student['created_at'],
                                                                          note=student['note'],
                                                                          total_amount=student['total_amount'],
                                                                          remaining_amount=student['remaining_amount'],
@@ -261,10 +263,12 @@ async def get_all():
             stu = await Students.filter(unique_id=req['_student']['unique_id']).first()
             install = await Installments.filter(unique_id=req['_installment']['unique_id']).first()
             if stu is not None:
-                await Students.filter(unique_id=req['unique_id']).update(sync_state=1, invoice=req['invoice'],
-                                                                         installment_id=install.id, student_id=stu.id,
-                                                                         date=req['date'],
-                                                                         amount=req['amount'])
+                await StudentInstallments.filter(unique_id=req['unique_id']).update(sync_state=1,
+                                                                                    invoice=req['invoice'],
+                                                                                    installment_id=install.id,
+                                                                                    student_id=stu.id,
+                                                                                    date=req['date'],
+                                                                                    amount=req['amount'])
 
 
 @sync_router.get('/sync')
@@ -332,8 +336,6 @@ async def sync():
     for student_installment_patch in students_installment_patch:
         install_patch = await StudentInstallments.filter(unique_id=student_installment_patch).first().prefetch_related(
             'student', 'installment')
-        print(student_installment_patch)
-        print(install_patch)
         data_patch = {"date": str(install_patch.date), "amount": install_patch.amount,
                       "unique_id": install_patch.unique_id,
                       "invoice": install_patch.invoice,
@@ -349,7 +351,7 @@ async def sync():
         for auth in auths:
             st = await States.filter(id=auth.state.id).first()
             authority.append({"state_unique_id": st.unique_id,
-                             "unique_id": auth.unique_id})
+                              "unique_id": auth.unique_id})
         user_json = {
             "username": user.username, "password": user.password, "authority": authority, "unique_id": user.unique_id
         }

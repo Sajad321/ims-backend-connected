@@ -173,10 +173,11 @@ async def post_student(schema: Student):
                        remaining_amount=schema.remaining_amount, poster_id=poster_id, unique_id=unique_id)
         await new.save(using_db=conn)
         for student_install in schema.installments:
+            unique_id2 = str(uuid4())
             new_student_install = StudentInstallments(installment_id=student_install.install_id,
                                                       date=student_install.date,
                                                       amount=student_install.amount, invoice=student_install.invoice,
-                                                      student_id=new.id, unique_id=unique_id)
+                                                      student_id=new.id, unique_id=unique_id2)
             await new_student_install.save(using_db=conn)
         return {"success": True,
                 "name": new.name}
@@ -238,9 +239,10 @@ async def patch_student(student_id, schema: Student):
             date=student_install.date,
             amount=student_install.amount,
             invoice=student_install.invoice)
-        q = await StudentInstallments.filter(student_id=student_id, installment_id=student_install.install_id).first()
+        q = await StudentInstallments.filter(student_id=student_id, installment_id=student_install.install_id
+                                             ).first().values('unique_id')
         async with in_transaction() as coon:
-            new = TemporaryPatch(unique_id=name['unique_id'], model_id=3)
+            new = TemporaryPatch(unique_id=q['unique_id'], model_id=3)
             await new.save(using_db=coon)
 
     name = name['name']
