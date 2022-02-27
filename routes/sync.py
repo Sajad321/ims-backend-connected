@@ -27,7 +27,8 @@ async def get_users() -> list:
         authority = []
         auth = await UserAuth.filter(user_id=user.id).prefetch_related('state').all()
         for au in auth:
-            auth_json = {"state_unique_id": au.state.unique_id, "unique_id": au.unique_id}
+            auth_json = {"state_unique_id": au.state.unique_id,
+                         "unique_id": au.unique_id}
             authority.append(auth_json)
         result_json['authority'] = authority
         result_list.append(result_json)
@@ -118,7 +119,8 @@ async def get_all():
     for governorate in governorates_req:
         if governorate['name'] not in governorates:
             async with in_transaction() as conn:
-                new = Governorates(id=governorate['id'], name=governorate['name'])
+                new = Governorates(
+                    id=governorate['id'], name=governorate['name'])
                 await new.save(using_db=conn)
     installments_req = requests.get(f'{HOST}/installments')
     installments = await Installments.all().values('unique_id')
@@ -161,7 +163,8 @@ async def get_all():
             await States.filter(unique_id=state['unique_id']).delete()
         elif state['unique_id'] not in states and state['delete_state'] == 0:
             async with in_transaction() as conn:
-                new = States(name=state['name'], unique_id=state['unique_id'], sync_state=1)
+                new = States(
+                    name=state['name'], unique_id=state['unique_id'], sync_state=1)
                 await new.save(using_db=conn)
         elif state['unique_id'] in states and state['delete_state'] == 0 and state['patch_state'] == 1:
             await States.filter(unique_id=state['unique_id']).update(name=state['name'])
@@ -180,8 +183,7 @@ async def get_all():
                                governorate_id=student['governorate_id'], institute_id=student['institute_id'],
                                state_id=st.id, first_phone=student['first_phone'],
                                second_phone=student['second_phone'], code_1=student['code_1'], code_2=student['code_2'],
-                               telegram_user=student['telegram_user']
-                               , created_at=student['created_at'], note=student['note'],
+                               telegram_user=student['telegram_user'], created_at=student['created_at'], note=student['note'],
                                total_amount=student['total_amount'],
                                remaining_amount=student['remaining_amount'], poster_id=student['poster_id'],
                                unique_id=student['unique_id'], sync_state=1)
@@ -197,8 +199,8 @@ async def get_all():
                                                                          second_phone=student['second_phone'],
                                                                          code_1=student['code_1'],
                                                                          code_2=student['code_2'],
-                                                                         telegram_user=student['telegram_user']
-                                                                         , created_at=student['created_at'],
+                                                                         telegram_user=student[
+                                                                             'telegram_user'], created_at=student['created_at'],
                                                                          note=student['note'],
                                                                          total_amount=student['total_amount'],
                                                                          remaining_amount=student['remaining_amount'],
@@ -255,6 +257,7 @@ async def get_all():
                                               amount=req['amount'])
                     await new.save(using_db=conn)
         if req['unique_id'] in student_installments and req['delete_state'] == 0 and req['patch_state'] == 1:
+            print(req)
             stu = await Students.filter(unique_id=req['_student']['unique_id']).first()
             install = await Installments.filter(unique_id=req['_installment']['unique_id']).first()
             if stu is not None:
@@ -301,7 +304,8 @@ async def sync():
                             "invoice": insta.invoice,
                             "install_unique_id": insta.installment.unique_id,
                             "student_unique_id": student_install.unique_id}
-            req = requests.post(f'{HOST}/student_installment', json=json_install)
+            req = requests.post(
+                f'{HOST}/student_installment', json=json_install)
             if req.status_code == 200:
                 await StudentInstallments.filter(id=insta.id).update(sync_state=1)
     all_del = await get_del()
@@ -320,14 +324,16 @@ async def sync():
     for state_patch in states_patch:
         state_patch = await States.filter(unique_id=state_patch).first()
         req = requests.post(f"{HOST}/state", json={"name": state_patch.name,
-                                                                  "unique_id": state_patch.unique_id,
-                                                                  "patch": True})
+                                                   "unique_id": state_patch.unique_id,
+                                                   "patch": True})
         if req.status_code == 200:
             await TemporaryPatch.filter(unique_id=state_patch.unique_id).update(sync_state=1)
 
     for student_installment_patch in students_installment_patch:
         install_patch = await StudentInstallments.filter(unique_id=student_installment_patch).first().prefetch_related(
             'student', 'installment')
+        print(student_installment_patch)
+        print(install_patch)
         data_patch = {"date": str(install_patch.date), "amount": install_patch.amount,
                       "unique_id": install_patch.unique_id,
                       "invoice": install_patch.invoice,
@@ -342,7 +348,8 @@ async def sync():
         authority = []
         for auth in auths:
             st = await States.filter(id=auth.state.id).first()
-            authority.append({"state_unique_id": st.unique_id, "unique_id": auth.unique_id})
+            authority.append({"state_unique_id": st.unique_id,
+                             "unique_id": auth.unique_id})
         user_json = {
             "username": user.username, "password": user.password, "authority": authority, "unique_id": user.unique_id
         }

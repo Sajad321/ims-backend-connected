@@ -7,7 +7,8 @@ class Users(BaseModel):
 
     class Config:
         orm_mode = True
-        
+
+
 class GeneralSchema(BaseModel):
     name: str
     users: Optional[List[Users]] = []
