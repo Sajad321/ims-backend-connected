@@ -231,16 +231,17 @@ async def get_all():
         elif user['unique_id'] in users and user['delete_state'] == 0 and user['patch_state'] == 1:
             await Users.filter(unique_id=user['unique_id']).update(sync_state=1, username=user['username'],
                                                                    password=user['password'], name=user['name'])
+            get_user = await Users.filter(unique_id=user['unique_id']).first()
             for auth in user['authority']:
                 if auth['delete_state'] != 1:
-                    await UserAuth.filter(unique_id=auth['unique_id']).delete()
+                    await UserAuth.filter(unique_id=auth['auth_unique_id']).delete()
                     async with in_transaction() as conn:
                         st_auth = await States.filter(unique_id=auth['state_unique_id']).first()
-                        new2 = UserAuth(state_id=st_auth.id, user_id=new.id, unique_id=auth['auth_unique_id'],
+                        new2 = UserAuth(state_id=st_auth.id, user_id=get_user.id, unique_id=auth['auth_unique_id'],
                                         sync_state=1)
                         await new2.save(using_db=conn)
                 if auth['delete_state'] == 1:
-                    await UserAuth.filter(unique_id=auth['unique_id']).delete()
+                    await UserAuth.filter(unique_id=auth['auth_unique_id']).delete()
     student_installments_req = requests.get(f'{HOST}/student_installment')
     student_installments = await StudentInstallments.all().values('unique_id')
     student_installments_req = student_installments_req.json()

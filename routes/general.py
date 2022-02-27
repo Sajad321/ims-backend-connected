@@ -59,11 +59,13 @@ async def post_state(schema: GeneralSchema):
             sup = UserAuth(state_id=new.id, user_id=user.id,
                            unique_id=str(uuid4()))
             await sup.save(using_db=conn)
+            await Users.filter(super=1).update(sync_state=0)
 
         for user_id in schema.users:
             auth = UserAuth(state_id=new.id, user_id=user_id.id,
                             unique_id=str(uuid4()))
             await auth.save(using_db=conn)
+            await Users.filter(id=user_id).update(sync_state=0)
 
     return {
         "success": True,
