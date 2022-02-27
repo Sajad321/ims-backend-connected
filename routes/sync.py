@@ -15,7 +15,7 @@ total_hours_wasted_here = 48
 """
 sync_router = APIRouter()
 
-HOST = "https://imsalhashimy-busy-kudu-vn.eu-gb.mybluemix.net"
+HOST = "http://192.168.0.110:8090"
 
 
 async def get_users() -> list:
@@ -260,7 +260,6 @@ async def get_all():
                                               amount=req['amount'])
                     await new.save(using_db=conn)
         if req['unique_id'] in student_installments and req['delete_state'] == 0 and req['patch_state'] == 1:
-            print(req)
             stu = await Students.filter(unique_id=req['_student']['unique_id']).first()
             install = await Installments.filter(unique_id=req['_installment']['unique_id']).first()
             if stu is not None:

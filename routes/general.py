@@ -65,7 +65,7 @@ async def post_state(schema: GeneralSchema):
             auth = UserAuth(state_id=new.id, user_id=user_id.id,
                             unique_id=str(uuid4()))
             await auth.save(using_db=conn)
-            await Users.filter(id=user_id).update(sync_state=0)
+            await Users.filter(id=user_id.id).update(sync_state=0)
 
     return {
         "success": True,
@@ -102,7 +102,7 @@ async def patch_state(state_id, schema: GeneralSchema):
             auth = UserAuth(state_id=state_id,
                             user_id=user_id.id, unique_id=str(uuid4()))
             await auth.save(using_db=conn)
-            await Users.filter(id=user_id).update(sync_state=0)
+            await Users.filter(id=user_id.id).update(sync_state=0)
 
     return {
         "success": True,
@@ -533,11 +533,13 @@ async def post_user(schema: User):
         await new.save(using_db=conn)
         if not schema.super:
             for state in schema.authority:
+                unique_id = str(uuid4())
                 auth = UserAuth(
                     user_id=new.id, state_id=state.id, unique_id=unique_id)
                 await auth.save(using_db=conn)
         else:
             for state in await States.all():
+                unique_id = str(uuid4())
                 auth = UserAuth(
                     user_id=new.id, state_id=state.id, unique_id=unique_id)
                 await auth.save(using_db=conn)
@@ -568,13 +570,14 @@ async def patch_user(user_id, schema: User):
     get_user = await Users.filter(id=user_id).first()
     password = hashlib.md5(schema.password.encode())
     await Users.filter(id=user_id).update(username=schema.username, password=password.hexdigest(), name=schema.name,
-                                          sync_state=0)
+                                          sync_state=0, super=0)
+    if schema.super:
+        await Users.filter(id=user_id).update(username=schema.username, password=password.hexdigest(), name=schema.name,
+                                              sync_state=0, super=1)
     # get_auth = await UserAuth.filter(user_id=get_user.id).first()
     await UserAuth.filter(user_id=get_user.id).delete()
     async with in_transaction() as conn:
-        print(len(schema.authority))
         for state in schema.authority:
-            print(state.id)
             unique_id = str(uuid4())
             auth = UserAuth(user_id=get_user.id,
                             state_id=state.id, unique_id=unique_id)
