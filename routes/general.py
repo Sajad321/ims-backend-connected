@@ -102,6 +102,7 @@ async def patch_state(state_id, schema: GeneralSchema):
             auth = UserAuth(state_id=state_id,
                             user_id=user_id.id, unique_id=str(uuid4()))
             await auth.save(using_db=conn)
+            await Users.filter(id=user_id).update(sync_state=0)
 
     return {
         "success": True,

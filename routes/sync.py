@@ -225,7 +225,7 @@ async def get_all():
                     if auth['delete_state'] != 1:
                         st_auth = await States.filter(unique_id=auth['state_unique_id']).first()
                         new2 = UserAuth(state_id=st_auth.id, user_id=new.id, unique_id=auth['auth_unique_id'],
-                                        sync_state=1)
+                                        sync_state=0)
                         await new2.save(using_db=conn)
 
         elif user['unique_id'] in users and user['delete_state'] == 0 and user['patch_state'] == 1:
@@ -238,7 +238,7 @@ async def get_all():
                     async with in_transaction() as conn:
                         st_auth = await States.filter(unique_id=auth['state_unique_id']).first()
                         new2 = UserAuth(state_id=st_auth.id, user_id=get_user.id, unique_id=auth['auth_unique_id'],
-                                        sync_state=1)
+                                        sync_state=0)
                         await new2.save(using_db=conn)
                 if auth['delete_state'] == 1:
                     await UserAuth.filter(unique_id=auth['auth_unique_id']).delete()
