@@ -78,16 +78,16 @@ async def get_edits() -> tuple:
 
 def student_json(student) -> dict:
     branch_id = None
-    if student.branch is not None:
+    if student.branch:
         branch_id = student.branch.id
     governorate_id = None
-    if student.governorate is not None:
+    if student.governorate:
         governorate_id = student.governorate.id
     institute_id = None
-    if student.institute is not None:
+    if student.institute:
         institute_id = student.institute.id
     poster = None
-    if student.poster is not None:
+    if student.poster:
         poster = student.poster.id
     return {"name": student.name, "school": student.school, "branch_id": branch_id,
             "governorate_id": governorate_id, "institute_id": institute_id,
