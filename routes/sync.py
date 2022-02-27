@@ -15,7 +15,7 @@ total_hours_wasted_here = 48
 """
 sync_router = APIRouter()
 
-HOST = "http://127.0.0.1:8090"
+HOST = "https://imsalhashimy-busy-kudu-vn.eu-gb.mybluemix.net"
 
 
 async def get_users() -> list:
@@ -78,16 +78,16 @@ async def get_edits() -> tuple:
 
 def student_json(student) -> dict:
     branch_id = None
-    if student.branch:
+    if student.branch is not None:
         branch_id = student.branch.id
     governorate_id = None
-    if student.governorate:
+    if student.governorate is not None:
         governorate_id = student.governorate.id
     institute_id = None
-    if student.institute:
+    if student.institute is not None:
         institute_id = student.institute.id
     poster = None
-    if student.poster:
+    if student.poster is not None:
         poster = student.poster.id
     return {"name": student.name, "school": student.school, "branch_id": branch_id,
             "governorate_id": governorate_id, "institute_id": institute_id,
