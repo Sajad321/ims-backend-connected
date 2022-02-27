@@ -15,7 +15,7 @@ total_hours_wasted_here = 48
 """
 sync_router = APIRouter()
 
-HOST = "http://192.168.0.110:8090"
+HOST = "https://imsalhashimy-busy-kudu-vn.eu-gb.mybluemix.net"
 
 
 async def get_users() -> list:
