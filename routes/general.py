@@ -395,18 +395,18 @@ async def get_students():
 async def get_state_students(state_id, params: Params = Depends()):
 
     if params.search is not None:
-        count = Students.filter(state_id=state_id, name__icontains=params.search).prefetch_related('branch', 'governorate', 'institute', 'state',
-                                                                                                   'poster').all().count
+        count = await Students.filter(state_id=state_id, name__icontains=params.search).prefetch_related('branch', 'governorate', 'institute', 'state',
+                                                                                                         'poster').all()
         students = await Students.filter(state_id=state_id, name__icontains=params.search).prefetch_related('branch', 'governorate', 'institute', 'state',
                                                                                                             'poster').all().limit(params.number_of_students).offset((params.page - 1) *
                                                                                                                                                                     params.number_of_students)
     else:
-        count = Students.filter(state_id=state_id).prefetch_related('branch', 'governorate', 'institute', 'state',
-                                                                    'poster').all().count
+        count = await Students.filter(state_id=state_id).prefetch_related('branch', 'governorate', 'institute', 'state',
+                                                                          'poster').all()
         students = await Students.filter(state_id=state_id).prefetch_related('branch', 'governorate', 'institute', 'state',
                                                                              'poster').all().limit(params.number_of_students).offset((params.page - 1) *
                                                                                                                                      params.number_of_students)
-
+    count = len(count)
     students_list = []
     student_json = {}
     for stu in students:
