@@ -391,6 +391,13 @@ async def get_students():
     return {"students": students_list, "success": True}
 
 
+@general_router.get('/students-names')
+async def get_students_names():
+    students = await Students.all().values("id", "name")
+
+    return {"students": students, "success": True}
+
+
 @general_router.get('/states/{state_id}/students')
 async def get_state_students(state_id, params: Params = Depends()):
 
@@ -668,10 +675,11 @@ async def del_user(user_id):
     }
 
 
-@general_router.patch('/ss')
-async def sss():
-    await Students.all().update(sync_state=1)
-    await StudentInstallments.all().update(sync_state=1)
-    return {
-        "success": True
-    }
+# @general_router.patch('/ss')
+# async def sss():
+#     await Students.all().update(sync_state=1)
+#     await StudentInstallments.all().update(sync_state=1)
+#     await States.all().update(sync_state=1)
+#     return {
+#         "success": True
+#     }
