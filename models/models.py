@@ -5,6 +5,7 @@ from tortoise import fields
 class Installments(Model):
     id = fields.IntField(pk=True)
     name = fields.TextField()
+    date = fields.DateField(null=True)
     unique_id = fields.TextField()
     sync_state = fields.IntField(default=0)  # 0 offline, 1 synced
 
@@ -74,6 +75,8 @@ class Students(Model):
     total_amount = fields.FloatField(null=True)
     poster = fields.ForeignKeyField("models.Posters", null=True)
     remaining_amount = fields.FloatField(null=True)
+    photo = fields.TextField(null=True)
+    qr = fields.TextField(null=True)
     unique_id = fields.TextField()
     sync_state = fields.IntField(default=0)
 
@@ -85,11 +88,36 @@ class StudentInstallments(Model):
     amount = fields.IntField(null=True)
     invoice = fields.IntField(null=True)
     student = fields.ForeignKeyField("models.Students", null=True)
+    received = fields.IntField(default=0)
     unique_id = fields.TextField()
     sync_state = fields.IntField(default=0)
 
     class Meta:
         table = "student_installments"
+
+
+class Attendance(Model):
+    id = fields.IntField(pk=True)
+    date = fields.TextField(null=True)
+    institute = fields.ForeignKeyField('models.Institutes', null=True)
+    unique_id = fields.TextField()
+    sync_state = fields.IntField(default=0)  # 0 offline, 1 synced
+
+    class Meta:
+        table = "attendance"
+
+
+class StudentAttendance(Model):
+    id = fields.IntField(pk=True)
+    student = fields.ForeignKeyField('models.Students', null=True)
+    attendance = fields.ForeignKeyField('models.Attendance', null=True)
+    attended = fields.IntField(default=0)
+    time = fields.TextField(null=True)
+    unique_id = fields.TextField()
+    sync_state = fields.IntField(default=0)  # 0 offline, 1 synced
+
+    class Meta:
+        table = "student_attendance"
 
 
 class States(Model):
@@ -104,7 +132,7 @@ class TemporaryDelete(Model):
     unique_id = fields.TextField()
     model_id = fields.IntField()
     ''' 
-    model_id = {"Students": 1, "states": 2, "student_installment": 3, "users": 4}
+    model_id = {"Students": 1, "states": 2, "student_installment": 3, "users": 4, "installments": 5}
     '''
     sync_state = fields.IntField(default=0)
 
@@ -114,6 +142,6 @@ class TemporaryPatch(Model):
     unique_id = fields.TextField()
     model_id = fields.IntField()
     ''' 
-    model_id = {"Students": 1, "states": 2, "student_installment": 3, "users": 4}
+    model_id = {"Students": 1, "states": 2, "student_installment": 3, "users": 4, "installments": 5}
     '''
     sync_state = fields.IntField(default=0)

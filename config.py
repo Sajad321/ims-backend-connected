@@ -3,6 +3,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.general import general_router
 from routes.sync import sync_router
+from routes.states import states_router
+from routes.auth import auth_router
+from routes.students import students_router
 
 
 def create_app() -> FastAPI:
@@ -11,6 +14,8 @@ def create_app() -> FastAPI:
     origins = [
         "http://localhost",
         "http://localhost:8080",
+        "http://127.0.0.1",
+        "http://127.0.0.1:8080",
     ]
 
     app.add_middleware(
@@ -33,6 +38,9 @@ def create_app() -> FastAPI:
 
 def register_views(app: FastAPI):
     app.include_router(general_router, tags=["General"])
+    app.include_router(students_router, tags=["Students"])
+    app.include_router(states_router, tags=["States"])
+    app.include_router(auth_router, tags=["Auth"])
     app.include_router(sync_router, tags=["Sync"])
 
 

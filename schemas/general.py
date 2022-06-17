@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
+from fastapi import Response, UploadFile, File
 
 
 class Users(BaseModel):
@@ -22,6 +23,7 @@ class StudentInstall(BaseModel):
     date: Optional[str] = None
     amount: Optional[float] = 0.0
     invoice: Optional[int] = None
+    received: Optional[int] = None
 
     class Config:
         orm_mode = True
@@ -29,6 +31,7 @@ class StudentInstall(BaseModel):
 
 class Student(BaseModel):
     name: str
+    token: str
     school: Optional[str] = None
     branch_id: Optional[int] = None
     institute_id: Optional[int] = None
