@@ -60,6 +60,20 @@ async def get_installments():
     }
 
 
+@general_router.patch('/installments/{installment_id}')
+async def patch_installments(installment_id: int, date: str):
+    try:
+        await Installments.filter(id=installment_id).update(date=date)
+        q = await Installments.filter(id=installment_id).first().values('unique_id')
+        async with in_transaction() as coon:
+            new = TemporaryPatch(unique_id=q['unique_id'], model_id=5)
+            await new.save(using_db=coon)
+        return {
+            "success": True
+        }
+    except:
+        raise StarletteHTTPException(500, "internal Server Error")
+
 # @general_router.patch('/ss')
 # async def sss():
 #     await Students.all().update(sync_state=1)

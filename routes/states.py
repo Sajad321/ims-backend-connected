@@ -161,6 +161,8 @@ async def get_state_students(state_id, params: Params = Depends()):
     for stu in students:
         student_json['name'] = stu.name
         student_json['id'] = stu.id
+        student_json['dob'] = stu.dob
+        student_json['banned'] = stu.banned
         student_json['school'] = stu.school
         student_json['code_1'] = stu.code_1
         student_json['code_2'] = stu.code_2

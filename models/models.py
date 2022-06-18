@@ -77,6 +77,8 @@ class Students(Model):
     remaining_amount = fields.FloatField(null=True)
     photo = fields.TextField(null=True)
     qr = fields.TextField(null=True)
+    dob = fields.TextField(null=True)
+    banned = fields.IntField(default=0)
     unique_id = fields.TextField()
     sync_state = fields.IntField(default=0)
 

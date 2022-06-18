@@ -91,12 +91,12 @@ async def post_student(schema: Student):
         poster_id = None
         if schema.poster_id != 0:
             poster_id = schema.poster_id
-        new = Students(name=schema.name, school=schema.school, branch_id=schema.branch_id,
+        new = Students(name=schema.name, school=schema.school, branch_id=schema.branch_id, dob=schema.dob,
                        governorate_id=schema.governorate_id, institute_id=schema.institute_id,
                        state_id=schema.state_id, first_phone=schema.first_phone,
                        second_phone=schema.second_phone, code_1=schema.code_1, code_2=schema.code_2,
                        telegram_user=schema.telegram_username, created_at=date_now, note=schema.note, total_amount=schema.total_amount,
-                       remaining_amount=schema.remaining_amount, poster_id=poster_id, unique_id=unique_id)
+                       remaining_amount=schema.remaining_amount, banned=schema.banned, poster_id=poster_id, unique_id=unique_id)
         await new.save(using_db=conn)
         institute = await Institutes.filter(id=schema.institute_id).first()
         # if photo is not None:
@@ -178,7 +178,7 @@ async def patch_student(student_id, schema: Student):
     poster_id = None
     if schema.poster_id != 0:
         poster_id = schema.poster_id
-    await Students.filter(id=student_id).update(name=schema.name, school=schema.school,
+    await Students.filter(id=student_id).update(name=schema.name, school=schema.school, dob=schema.dob,
                                                 branch_id=schema.branch_id,
                                                 governorate_id=schema.governorate_id,
                                                 institute_id=schema.institute_id,
@@ -187,10 +187,11 @@ async def patch_student(student_id, schema: Student):
                                                 second_phone=schema.second_phone,
                                                 code_1=schema.code_1,
                                                 code_2=schema.code_2,
-                                                telegram_user=schema.telegram_username, created_at=date_now,
+                                                telegram_user=schema.telegram_username,
                                                 note=schema.note,
                                                 total_amount=schema.total_amount,
                                                 remaining_amount=schema.remaining_amount,
+                                                banned=schema.banned,
                                                 poster_id=poster_id)
     name = await Students.filter(id=student_id).first().values('name', 'unique_id')
     async with in_transaction() as conn:

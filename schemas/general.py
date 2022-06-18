@@ -33,6 +33,7 @@ class Student(BaseModel):
     name: str
     token: str
     school: Optional[str] = None
+    dob: Optional[str] = None
     branch_id: Optional[int] = None
     institute_id: Optional[int] = None
     governorate_id: Optional[int] = None
@@ -45,6 +46,7 @@ class Student(BaseModel):
     total_amount: Optional[float] = None
     remaining_amount: Optional[float] = None
     note: Optional[str] = None
+    banned: Optional[int] = None
     installments: List[StudentInstall]
     state_id: int
 

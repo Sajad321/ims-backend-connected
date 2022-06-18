@@ -83,8 +83,8 @@ async def get_del() -> dict:
     return {
         "unique_id_students": unique_id_students, "unique_id_students_install": unique_id_students_install,
         "unique_id_states": unique_id_states, "unique_id_users": unique_id_users,
-        "unique_id_installments": unique_id_states, "unique_id_attendance": unique_id_users,
-        "unique_id_student_attendance": unique_id_states
+        "unique_id_installments": unique_id_installments, "unique_id_attendance": unique_id_attendance,
+        "unique_id_student_attendance": unique_id_student_attendance
     }
 
 
@@ -137,6 +137,8 @@ def student_json(student) -> dict:
             "created_at": str(student.created_at), "note": student.note,
             "total_amount": student.total_amount,
             "poster": poster, "remaining_amount": student.remaining_amount,
+            "dob": student.dob,
+            "banned": student.banned,
             "unique_id": student.unique_id}
 
 
@@ -228,6 +230,8 @@ async def get_all():
                                total_amount=student['total_amount'],
                                remaining_amount=student['remaining_amount'], poster_id=student['poster_id'],
                                qr=student["qr"], photo=student["photo"],
+                               dob=student["dob"],
+                               banned=student["banned"],
                                unique_id=student['unique_id'], sync_state=1)
                 await new.save(using_db=conn)
         elif student['unique_id'] in students and student['delete_state'] == 0 and student['patch_state'] == 1:
@@ -248,6 +252,8 @@ async def get_all():
                                                                          total_amount=student['total_amount'],
                                                                          remaining_amount=student['remaining_amount'],
                                                                          qr=student["qr"], photo=student["photo"],
+                                                                         dob=student["dob"],
+                                                                         banned=student["banned"],
                                                                          poster_id=student['poster_id'],
                                                                          sync_state=1)
     users_auth_req = requests.get(f'{HOST}/users')
@@ -260,7 +266,7 @@ async def get_all():
             await Users.filter(unique_id=user['unique_id']).delete()
         elif user['unique_id'] not in users and user['delete_state'] == 0:
             async with in_transaction() as conn:
-                new = Users(username=user['username'], password=user['password'], unique_id=user['unique_id'],
+                new = Users(username=user['username'], password=user['password'], unique_id=user['unique_id'], super=user["super"],
                             sync_state=1, name=user['name'])
                 await new.save(using_db=conn)
                 for auth in user['authority']:
@@ -271,7 +277,7 @@ async def get_all():
                         await new2.save(using_db=conn)
 
         elif user['unique_id'] in users and user['delete_state'] == 0 and user['patch_state'] == 1:
-            await Users.filter(unique_id=user['unique_id']).update(sync_state=1, username=user['username'],
+            await Users.filter(unique_id=user['unique_id']).update(sync_state=1, username=user['username'], super=user["super"],
                                                                    password=user['password'], name=user['name'])
             get_user = await Users.filter(unique_id=user['unique_id']).first()
             for auth in user['authority']:
@@ -321,8 +327,9 @@ async def get_all():
     for attendance in attendance_req:
         if attendance['unique_id'] not in attendances:
             async with in_transaction() as conn:
-                new = Attendance(id=attendance['id'], date=attendance['date'], unique_id=attendance['unique_id'],
-                                 sync_state=1)
+                new = Attendance(
+                    institute_id=attendance["institute_id"], date=attendance['date'], unique_id=attendance['unique_id'],
+                    sync_state=1)
                 await new.save(using_db=conn)
 
     student_attendance_req = requests.get(f'{HOST}/student-attendance')
@@ -344,11 +351,11 @@ async def get_all():
                     await new.save(using_db=conn)
         if req['unique_id'] in student_attendance and req['delete_state'] == 0 and req['patch_state'] == 1:
             stu = await Students.filter(unique_id=req['_student']['unique_id']).first()
-            attendance = await Attendance.filter(unique_id=req['_installment']['unique_id']).first()
+            attendance = await Attendance.filter(unique_id=req['_attendance']['unique_id']).first()
             if stu is not None:
                 await StudentAttendance.filter(unique_id=req['unique_id']).update(sync_state=1,
                                                                                   attended=req['attended'],
-                                                                                  attendance_id=install.id,
+                                                                                  attendance_id=attendance.id,
                                                                                   student_id=stu.id,
                                                                                   time=req['time'])
 
@@ -454,24 +461,27 @@ async def sync():
             authority.append({"state_unique_id": st.unique_id,
                               "unique_id": auth.unique_id})
         user_json = {
-            "username": user.username, "password": user.password, "authority": authority, "unique_id": user.unique_id
+            "name": user.name,
+            "username": user.username, "password": user.password, "authority": authority, "unique_id": user.unique_id, "patch": True
         }
         req = requests.post(f'{HOST}/users', json=user_json)
         if req.status_code == 200:
             await TemporaryPatch.filter(unique_id=user.unique_id).update(sync_state=1)
 
     for installment in installments_patch:
-        instl = await Installment.filter(unique_id=installment).first()
+        instl = await Installments.filter(unique_id=installment).first()
         installment_json = {
-            "name": instl.name, "date": instl.date, "unique_id": instl.unique_id
+            "name": instl.name, "date": str(instl.date), "unique_id": installment, "patch": True
         }
+        print(installment_json)
         req = requests.post(f'{HOST}/installments', json=installment_json)
         if req.status_code == 200:
             await TemporaryPatch.filter(unique_id=instl.unique_id).update(sync_state=1)
 
     for attendance_patch in attendances_patch:
         atte = await Attendance.filter(unique_id=attendance_patch).first()
-        attendance_json = {"date": atte.date, "unique_id": atte.unique_id
+        attendance_json = {"date": atte.date, "unique_id": atte.unique_id,
+                           "institute_id": attendance.institute_id, "patch": True
                            }
         req = requests.post(f'{HOST}/attendance', json=attendance_json)
         if req.status_code == 200:
