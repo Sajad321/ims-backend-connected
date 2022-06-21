@@ -78,7 +78,7 @@ class Students(Model):
     photo = fields.TextField(null=True)
     qr = fields.TextField(null=True)
     dob = fields.TextField(null=True)
-    banned = fields.IntField(default=0)
+    banned = fields.IntField(null=True, default=0)
     unique_id = fields.TextField()
     sync_state = fields.IntField(default=0)
 

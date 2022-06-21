@@ -3,7 +3,7 @@ import signal
 from typing import Optional
 from uuid import uuid4
 from fastapi import APIRouter, Depends, Response, UploadFile, File
-from starlette.responses import StreamingResponse
+from starlette.responses import StreamingResponse, FileResponse
 from models.models import Institutes, Governorates, States, Students, Installments, StudentInstallments, \
     Users, UserAuth, TemporaryPatch, TemporaryDelete, Branches, Posters
 from tortoise.transactions import in_transaction
@@ -21,6 +21,7 @@ from PIL import ImageDraw, ImageFont, Image
 
 from io import BytesIO
 from starlette.exceptions import HTTPException as StarletteHTTPException
+import aiofiles
 
 students_router = APIRouter()
 
@@ -45,12 +46,35 @@ def qr_gen(id_num, name, institute):
     }
 
 
-def photo_save(photo, _id, name, institute):
-    img = Image.open(photo)
-    image = '{}-{}.jpg'.format(_id, name)
-    my_path = './images/' + institute + '/' + image
-    img.save(
-        os.path.join(os.getenv('LOCALAPPDATA'), "ims", my_path), 'JPEG')
+# async def save_files(file):
+#     """
+#     save multiple files of patient
+#     """
+#     path_data = directory()
+#     path_data = os.path.join(path_data, 'clinic360')
+#     if 'labs' not in os.listdir(path_data):
+#         os.makedirs(os.path.join(path_data, 'labs'))
+#     path_data = os.path.join(path_data, 'labs')
+#     file_name = file.filename
+#     file_type = file_name.split('.')
+#     file_type = file_type[-1]
+#     name = f'{str(uuid.uuid4().hex)}.{file_type}'
+#     my_path = os.path.join(path_data, name)
+#     return {
+#         "path": '/clinic360/labs/{}'.format(name)
+#     }
+
+
+async def photo_save(photo, _id, name, institute):
+    file_name = photo.filename
+    file_type = file_name.split('.')
+    file_type = file_type[-1]
+    print(file_name)
+    name = '{}-{}.jpg'.format(_id, name)
+    my_path = './images/' + institute + '/' + name
+    async with aiofiles.open(os.path.join(os.getenv('LOCALAPPDATA'), "ims", my_path), 'wb') as out_file:
+        content = await photo.read()  # async read
+        await out_file.write(content)  # async write
     return {
         "image_path": my_path
     }
@@ -129,14 +153,14 @@ async def post_student(schema: Student):
 
 # To change student's photo
 @students_router.patch('/photo')
-async def patch_photo(student_id: int, photo: bytes = File("photo")):
+async def patch_photo(student_id: int, photo: UploadFile = File("photo")):
     # try:
-    photo = BytesIO(photo)
     stud = await Students.filter(id=student_id).first()
     institute = await Institutes.filter(id=stud.institute_id).first()
     if stud.photo is not None:
         os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "ims", stud.photo))
-    save = photo_save(photo, stud.unique_id, stud.name, institute.name)
+    print(photo)
+    save = await photo_save(photo, stud.unique_id, stud.name, institute.name)
     await Students.filter(id=student_id).update(photo=save['image_path'])
     return {
         'success': True
@@ -247,7 +271,7 @@ async def patch_student(student_id, schema: Student):
 #     "success": true
 # }`
 @students_router.delete('/students/{student_id}')
-async def del_student(student_id):
+async def del_student(student_id, token):
     student = await Students.filter(id=student_id).first().values('name', 'unique_id')
     name = student['name']
     await Students.filter(id=student_id).delete()
@@ -256,6 +280,14 @@ async def del_student(student_id):
     async with in_transaction() as conn:
         new = TemporaryDelete(unique_id=student['unique_id'], model_id=1)
         await new.save(using_db=conn)
+
+    req = requests.get(f"http://127.0.0.1/personnel/api/employee/?emp_code={student['unique_id']}",  headers={
+                       'Content-Type': 'application/json', "Authorization": f"JWT {token}"})
+    print(req)
+    json_data = req.json()
+    json_data_id = json_data.get("data")[0].get("id")
+    req = requests.delete(f"http://127.0.0.1/personnel/api/employees/{json_data_id}/",  headers={
+                          'Content-Type': 'application/json', "Authorization": f"JWT {token}"})
     return {
         "success": True,
         "name": name
@@ -386,12 +418,9 @@ async def get_photo(student_id):
     try:
         query = await Students.filter(id=student_id).first()
         image_path = query.photo
-        img = Image.open(os.path.join(
+
+        return FileResponse(os.path.join(
             os.getenv('LOCALAPPDATA'), "ims", image_path))
-        buf = BytesIO()
-        img.save(buf, 'JPEG')
-        buf.seek(0)
-        return StreamingResponse(buf, media_type="image/jpeg")
 
     except:
         raise StarletteHTTPException(404, "Not Found")

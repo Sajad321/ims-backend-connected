@@ -48,9 +48,17 @@ async def get_posters():
 
 @general_router.get('/institutes')
 async def get_institutes():
-    return {
-        "institutes": await Institutes.all()
-    }
+    institutes = await Institutes.all()
+    for institute in institutes:
+        name = institute.name
+        if(not os.path.exists(os.path.join(os.getenv('LOCALAPPDATA'), 'ims/images', f'{name}'))):
+            os.mkdir(os.path.join(os.getenv('LOCALAPPDATA'),
+                                  'ims/images', f'{name}'))
+        if(not os.path.exists(os.path.join(os.getenv('LOCALAPPDATA'), 'ims/qr', f'{name}'))):
+            os.mkdir(os.path.join(os.getenv('LOCALAPPDATA'),
+                                  'ims/qr', f'{name}'))
+    return {'success': True,
+            "institutes": institutes}
 
 
 @general_router.get('/installments')
