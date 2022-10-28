@@ -128,7 +128,8 @@ async def post_student(schema: Student):
         #     image = photo_save(photo, unique_id, new.name,
         #                        institute.name)
         #     new.photo = image['image_path']
-        qr = qr_gen(unique_id, schema.name, institute.name)
+        if institute:
+            qr = qr_gen(unique_id, schema.name, institute.name)
         await Students.filter(id=new.id).update(qr=qr['qrpath'])
         for student_install in schema.installments:
             unique_id2 = str(uuid4())
@@ -137,18 +138,21 @@ async def post_student(schema: Student):
                                                       amount=student_install.amount, invoice=student_install.invoice,
                                                       student_id=new.id, unique_id=unique_id2)
             await new_student_install.save(using_db=conn)
-    req = requests.post("http://127.0.0.1/personnel/api/employees/",
-                        json={
-                            "emp_code": unique_id,
-                            "first_name": schema.name,
-                            "area": [2],
-                            "department": 1,
-                        },  headers={'Content-Type': 'application/json', "Authorization": f"JWT {schema.token}"})
-    print(req)
-    print(req.json())
-    if req.status_code == 201:
-        return {"success": True,
-                "name": new.name, "id": new.id}
+    if institute:
+        req = requests.post("http://127.0.0.1/personnel/api/employees/",
+                            json={
+                                "emp_code": unique_id,
+                                "first_name": schema.name,
+                                "area": [2],
+                                "department": 1,
+                            },  headers={'Content-Type': 'application/json', "Authorization": f"JWT {schema.token}"})
+        print(req)
+        print(req.json())
+        if req.status_code == 201:
+            return {"success": True,
+                    "name": new.name, "id": new.id}
+    return {"success": True,
+            "name": new.name, "id": new.id}
 
 
 # To change student's photo
@@ -227,7 +231,8 @@ async def patch_student(student_id, schema: Student):
     #     image = photo_save(photo, unique_id, new.name,
     #                        institute.name)
     #     new.photo = image['image_path']
-    qr = qr_gen(name['unique_id'], schema.name, institute.name)
+    if institute:
+        qr = qr_gen(name['unique_id'], schema.name, institute.name)
     await Students.filter(id=student_id).update(qr=qr['qrpath'])
     for student_install in schema.installments:
         await StudentInstallments.filter(student_id=student_id, installment_id=student_install.install_id).update(
@@ -241,19 +246,20 @@ async def patch_student(student_id, schema: Student):
             new = TemporaryPatch(unique_id=q['unique_id'], model_id=3)
             await new.save(using_db=coon)
 
-    req = requests.get(f"http://127.0.0.1/personnel/api/employee/?emp_code={name['unique_id']}",  headers={
-                       'Content-Type': 'application/json', "Authorization": f"JWT {schema.token}"})
-    print(req)
-    json_data = req.json()
-    json_data_id = json_data.get("data")[0].get("id")
-    req = requests.patch(f"http://127.0.0.1/personnel/api/employees/{json_data_id}/",
-                         json={
-                             "first_name": schema.name,
-                             "last_name": "",
-                         },  headers={'Content-Type': 'application/json', "Authorization": f"JWT {schema.token}"})
-    print(req)
-    print(req.json())
-    name = name['name']
+    if institute:
+        req = requests.get(f"http://127.0.0.1/personnel/api/employee/?emp_code={name['unique_id']}",  headers={
+            'Content-Type': 'application/json', "Authorization": f"JWT {schema.token}"})
+        print(req)
+        json_data = req.json()
+        json_data_id = json_data.get("data")[0].get("id")
+        req = requests.patch(f"http://127.0.0.1/personnel/api/employees/{json_data_id}/",
+                             json={
+                                 "first_name": schema.name,
+                                 "last_name": "",
+                             },  headers={'Content-Type': 'application/json', "Authorization": f"JWT {schema.token}"})
+        print(req)
+        print(req.json())
+        name = name['name']
     return {
         "success": True,
         "name": name, "id": student_id
@@ -272,7 +278,7 @@ async def patch_student(student_id, schema: Student):
 # }`
 @students_router.delete('/students/{student_id}')
 async def del_student(student_id, token):
-    student = await Students.filter(id=student_id).first().values('name', 'unique_id')
+    student = await Students.filter(id=student_id).first().values('name', "institute_id", 'unique_id')
     name = student['name']
     await Students.filter(id=student_id).delete()
     await TemporaryPatch.filter(unique_id=student['unique_id']).delete()
@@ -280,14 +286,14 @@ async def del_student(student_id, token):
     async with in_transaction() as conn:
         new = TemporaryDelete(unique_id=student['unique_id'], model_id=1)
         await new.save(using_db=conn)
-
-    req = requests.get(f"http://127.0.0.1/personnel/api/employee/?emp_code={student['unique_id']}",  headers={
-                       'Content-Type': 'application/json', "Authorization": f"JWT {token}"})
-    print(req)
-    json_data = req.json()
-    json_data_id = json_data.get("data")[0].get("id")
-    req = requests.delete(f"http://127.0.0.1/personnel/api/employees/{json_data_id}/",  headers={
-                          'Content-Type': 'application/json', "Authorization": f"JWT {token}"})
+    if student["institute_id"]:
+        req = requests.get(f"http://127.0.0.1/personnel/api/employee/?emp_code={student['unique_id']}",  headers={
+            'Content-Type': 'application/json', "Authorization": f"JWT {token}"})
+        print(req)
+        json_data = req.json()
+        json_data_id = json_data.get("data")[0].get("id")
+        req = requests.delete(f"http://127.0.0.1/personnel/api/employees/{json_data_id}/",  headers={
+            'Content-Type': 'application/json', "Authorization": f"JWT {token}"})
     return {
         "success": True,
         "name": name

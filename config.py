@@ -6,6 +6,9 @@ from routes.sync import sync_router
 from routes.states import states_router
 from routes.auth import auth_router
 from routes.students import students_router
+import os
+
+path_data = os.getenv('LOCALAPPDATA')
 
 
 def create_app() -> FastAPI:
@@ -27,7 +30,7 @@ def create_app() -> FastAPI:
     )
     register_tortoise(
         app,
-        db_url='sqlite://db.sqlite3',
+        db_url=f'sqlite://{path_data}/ims/db.sqlite3',
         modules={'models': ["models.models"]},
         generate_schemas=True,
         add_exception_handlers=True,
@@ -46,7 +49,7 @@ def register_views(app: FastAPI):
 
 TORTOISE_ORM = {
     "connections": {
-        "default": "sqlite://db.sqlite3"
+        "default": f"sqlite://{path_data}/ims/db.sqlite3"
     },
     "apps": {
         "models": {
